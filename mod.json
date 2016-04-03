@@ -1,0 +1,28 @@
+{
+	"name": "Troposphere",
+	"description": "Adds a magical world of clouds!",
+	"version": "1.0.0",
+	"author": "Spacetech",
+	"hooks": [
+		"CanMonsterAttack",
+		"CanMonsterMove",
+		"CanSeeMonster",
+		"OnConsumeItem",
+		"OnCreateWorld",
+		"OnGameStart",
+		"OnSpawnMonsterFromGroup",
+		"OnTurnComplete",
+		"OnTurnStart",
+		"PostGenerateWorld",
+		"PreRenderWorld",
+		"ShouldRender"
+	],
+	"compatible_minor_versions": [
+		0
+	],
+	"unloadable": false,
+	"files": [
+		"troposphere.js"
+	],
+	"publishedFileId": "474819705"
+}

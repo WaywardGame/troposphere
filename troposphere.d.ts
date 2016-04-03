@@ -1,0 +1,68 @@
+/// <reference path="mod-reference/modreference.d.ts" />
+interface ITroposphereData {
+    seed: number;
+    flying: boolean;
+}
+declare class Mod extends Mods.Mod {
+    private static TroposphereZ;
+    private moving;
+    private falling;
+    private itemNimbus;
+    private itemRainbow;
+    private itemRainbowClayJug;
+    private itemRainbowGlassBottle;
+    private itemSnowflakes;
+    private itemCloudstone;
+    private doodadCloudBoulder;
+    private doodadStormBoulder;
+    private doodadRainbow;
+    private terrainCloudWater;
+    private terrainCloud;
+    private terrainRainbow;
+    private terrainCloudBoulder;
+    private terrainCloudstone;
+    private terrainStorm;
+    private terrainStormBoulder;
+    private terrainStormstone;
+    private terrainHole;
+    private monsterBear;
+    private monsterRabbit;
+    private monsterCloudling;
+    private monsterLightningElemental;
+    private monsterSprite;
+    private monsterPool;
+    private messageFlewToTroposphere;
+    private messageFlewToTroposphereFailure;
+    private messageFlewToLand;
+    private messageFlewToLandFailure;
+    private messageFellToLand;
+    private messageDeathByFalling;
+    private messageGatheredRainbow;
+    private messageNoRainbow;
+    private data;
+    onInitialize(saveDataGlobal: any): any;
+    onLoad(data: any): void;
+    onUnload(): void;
+    onSave(): any;
+    onCreateWorld(world: World): void;
+    postGenerateWorld(generateNewWorld: boolean): void;
+    preRenderWorld(tileScale: number, viewWidth: number, viewHeight: number): void;
+    shouldRender(): RenderFlag;
+    onGameStart(isLoadingSave: boolean): void;
+    onTurnStart(): void;
+    onTurnComplete(): void;
+    initializeItems(): void;
+    initializeDoodads(): void;
+    initializeTerrain(): void;
+    initializeMonsters(): void;
+    onNimbus(item: Item.IItem): any;
+    onGatherRainbow(item: Item.IItem): any;
+    onConsumeItem(itemType: ItemType, actionType: ActionType): boolean;
+    onSpawnMonsterFromGroup(monsterGroup: MonsterSpawnGroup, monsterPool: MonsterType[], x: number, y: number, z: number): boolean;
+    canMonsterMove(monsterId: number, monster: IMonster, tile?: ITile): boolean;
+    canMonsterAttack(monsterId: number, monster: IMonster): boolean;
+    canSeeMonster(monsterId: number, monster: IMonster, tile: ITile): boolean;
+    setFlying(flying: boolean, message: boolean): void;
+    findOpenTile(z: number): IPoint;
+    isFlyableTile(tile: ITile): boolean;
+}
