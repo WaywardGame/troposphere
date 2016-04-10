@@ -451,7 +451,7 @@ var Mod = (function (_super) {
             ui.displayMessage(this.messageNoRainbow);
         }
     };
-    Mod.prototype.onConsumeItem = function (itemType, actionType) {
+    Mod.prototype.canConsumeItem = function (itemType, actionType) {
         if (itemType === this.itemRainbowGlassBottle && actionType === ActionType.Drink) {
             player.gender = player.gender === Gender.Male ? Gender.Female : Gender.Male;
             return true;

@@ -588,7 +588,7 @@ class Mod extends Mods.Mod {
 		}
 	}
 
-	public onConsumeItem(itemType: ItemType, actionType: ActionType): boolean {
+	public canConsumeItem(itemType: ItemType, actionType: ActionType): boolean {
 		if (itemType === this.itemRainbowGlassBottle && actionType === ActionType.Drink) {
 			player.gender = player.gender === Gender.Male ? Gender.Female : Gender.Male;
 			return true;

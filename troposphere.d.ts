@@ -57,7 +57,7 @@ declare class Mod extends Mods.Mod {
     initializeMonsters(): void;
     onNimbus(item: Item.IItem): any;
     onGatherRainbow(item: Item.IItem): any;
-    onConsumeItem(itemType: ItemType, actionType: ActionType): boolean;
+    canConsumeItem(itemType: ItemType, actionType: ActionType): boolean;
     onSpawnMonsterFromGroup(monsterGroup: MonsterSpawnGroup, monsterPool: MonsterType[], x: number, y: number, z: number): boolean;
     canMonsterMove(monsterId: number, monster: IMonster, tile?: ITile): boolean;
     canMonsterAttack(monsterId: number, monster: IMonster): boolean;

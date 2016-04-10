@@ -7,7 +7,7 @@
 		"CanMonsterAttack",
 		"CanMonsterMove",
 		"CanSeeMonster",
-		"OnConsumeItem",
+		"CanConsumeItem",
 		"OnCreateWorld",
 		"OnGameStart",
 		"OnSpawnMonsterFromGroup",
