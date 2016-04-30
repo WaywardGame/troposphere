@@ -248,8 +248,10 @@ class Mod extends Mods.Mod {
 		if (this.falling) {
 			this.falling = false;
 			this.setFlying(false, false);
+
 			//fall damage
 			ui.displayMessage(this.messageFellToLand, MessageType.Bad);
+
 			var tile = game.getTile(player.x, player.y, player.z);
 			var terrainType = Utilities.TileHelpers.getType(tile);
 			if (TileAtlas.isWater(terrainType)) {
@@ -258,7 +260,9 @@ class Mod extends Mods.Mod {
 				player.damage(-40, messages[this.messageDeathByFalling]);
 				game.placeCorpse({ type: MonsterType.Blood, x: player.x, y: player.y, z: player.z });
 			}
+
 			game.passTurn();
+
 		} else {
 			var tile = game.getTile(player.x, player.y, player.z);
 			var terrainType = Utilities.TileHelpers.getType(tile);
@@ -640,26 +644,32 @@ class Mod extends Mods.Mod {
 		return false;
 	}
 
-	public setFlying(flying: boolean, message: boolean) {
+	public setFlying(flying: boolean, passTurn: boolean): boolean {
 		var z = !flying ? Z_NORMAL : Mod.TroposphereZ;
 
 		var openTile = this.findOpenTile(z);
 		if (openTile === null || player.z === Z_CAVE) {
-			if (message) {
+			if (passTurn) {
 				ui.displayMessage(flying ? this.messageFlewToTroposphereFailure : this.messageFlewToLandFailure, MessageType.Bad);
 			}
-			return;
+			return false;
 		}
 
 		this.data.flying = flying;
 
 		player.x = openTile.x;
 		player.y = openTile.y;
+		game.raft = null;
+
 		game.setPlayerZ(z);
 
-		if (message) {
+		if (passTurn) {
 			ui.displayMessage(flying ? this.messageFlewToTroposphere : this.messageFlewToLand, MessageType.Good);
+
+			game.passTurn();
 		}
+
+		return true;
 	}
 
 	public findOpenTile(z: number): IPoint {

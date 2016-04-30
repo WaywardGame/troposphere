@@ -62,7 +62,7 @@ declare class Mod extends Mods.Mod {
     canMonsterMove(monsterId: number, monster: IMonster, tile?: ITile): boolean;
     canMonsterAttack(monsterId: number, monster: IMonster): boolean;
     canSeeMonster(monsterId: number, monster: IMonster, tile: ITile): boolean;
-    setFlying(flying: boolean, message: boolean): void;
+    setFlying(flying: boolean, passTurn: boolean): boolean;
     findOpenTile(z: number): IPoint;
     isFlyableTile(tile: ITile): boolean;
 }

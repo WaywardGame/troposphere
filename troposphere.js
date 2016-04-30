@@ -492,22 +492,25 @@ var Mod = (function (_super) {
         monsterObj.nextVisibleCount--;
         return false;
     };
-    Mod.prototype.setFlying = function (flying, message) {
+    Mod.prototype.setFlying = function (flying, passTurn) {
         var z = !flying ? Z_NORMAL : Mod.TroposphereZ;
         var openTile = this.findOpenTile(z);
         if (openTile === null || player.z === Z_CAVE) {
-            if (message) {
+            if (passTurn) {
                 ui.displayMessage(flying ? this.messageFlewToTroposphereFailure : this.messageFlewToLandFailure, MessageType.Bad);
             }
-            return;
+            return false;
         }
         this.data.flying = flying;
         player.x = openTile.x;
         player.y = openTile.y;
+        game.raft = null;
         game.setPlayerZ(z);
-        if (message) {
+        if (passTurn) {
             ui.displayMessage(flying ? this.messageFlewToTroposphere : this.messageFlewToLand, MessageType.Good);
+            game.passTurn();
         }
+        return true;
     };
     Mod.prototype.findOpenTile = function (z) {
         var q = [{ x: player.x, y: player.y }];
