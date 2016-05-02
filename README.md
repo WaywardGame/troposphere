@@ -17,7 +17,7 @@ Open the folder in Visual Studio Code and build with Ctrl+Shift+B.
 [http://steamcommunity.com/sharedfiles/filedetails/?id=474819705](http://steamcommunity.com/sharedfiles/filedetails/?id=474819705)
 
 ## Screenshots
-![Troposphere](http://images.akamai.steamusercontent.com/ugc/312243066448010728/18B1F277A4B9DBEC664E6FC7405FEF0472F0FB40/ "Troposphere")
+![Troposphere](https://raw.githubusercontent.com/WaywardGame/troposphere/master/mod.png "Troposphere")
 
 ![Screenshot #1](http://images.akamai.steamusercontent.com/ugc/312243491181374883/56954CC691456ED424E278572B7D9464DD6F1FEC/ "Screenshot #1")
 
