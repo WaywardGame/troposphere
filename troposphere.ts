@@ -49,6 +49,7 @@ class Mod extends Mods.Mod {
 	private messageNoRainbow: number;
 
 	private data: ITroposphereData;
+	private firstLoad: boolean;
 
 	public onInitialize(saveDataGlobal: any): any {
 	}
@@ -56,11 +57,13 @@ class Mod extends Mods.Mod {
 	public onLoad(data: any): void {
 		this.data = data;
 
-		if (!this.data) {
+		this.firstLoad = !this.data;
+		if (this.firstLoad) {
 			this.data = {
 				seed: new Date().getTime(),
 				flying: false,
 			};
+
 		}
 
 		this.initializeItems();
@@ -92,27 +95,27 @@ class Mod extends Mods.Mod {
 
 	public postGenerateWorld(generateNewWorld: boolean) {
 		// percentage
-		var doodadChance = 0.6;
-		var doodadChanceStorm = 0.2;
+		let doodadChance = 0.6;
+		let doodadChanceStorm = 0.2;
 
-		var terrainHoleChance = 0.02;
+		let terrainHoleChance = 0.02;
 
-		var monsterChance = 0.0025;
-		var monsterSpriteChance = 0.0001;
-		var monsterAberrantChance = 0.05;
-		var monsterAberrantStormChance = 0.50;
+		let monsterChance = 0.0025;
+		let monsterSpriteChance = 0.0001;
+		let monsterAberrantChance = 0.05;
+		let monsterAberrantStormChance = 0.50;
 
-		var tile: ITile;
-		var terrainType: number;
+		let tile: ITile;
+		let terrainType: number;
 
 		Utilities.Random.setSeed(this.data.seed);
 
-		for (var x = 0; x < game.mapSize; x++) {
-			for (var y = 0; y < game.mapSize; y++) {
+		for (let x = 0; x < game.mapSize; x++) {
+			for (let y = 0; y < game.mapSize; y++) {
 				tile = game.setTile(x, y, Mod.TroposphereZ, game.getTile(x, y, Mod.TroposphereZ) || <ITile>{});
 
-				var tileGfx = 0;
-				var normalTerrainType = terrains[Utilities.TileHelpers.getType(game.getTile(x, y, Z_NORMAL))].terrainType;
+				let tileGfx = 0;
+				let normalTerrainType = terrains[Utilities.TileHelpers.getType(game.getTile(x, y, Z_NORMAL))].terrainType;
 
 				switch (normalTerrainType) {
 					case TerrainType.Rocks:
@@ -131,24 +134,22 @@ class Mod extends Mods.Mod {
 					case TerrainType.ShallowFreshWater:
 						if (Utilities.Random.nextFloat() <= doodadChanceStorm) {
 							terrainType = this.terrainStormBoulder;
-						}
-						else {
+						} else {
 							terrainType = this.terrainStorm;
 						}
 						break;
 
-					case TerrainType.Trees:
-					case TerrainType.BareTrees:
-					case TerrainType.BarePalmTrees:
-					case TerrainType.TreesWithVines:
-					case TerrainType.TreesWithBerries:
-					case TerrainType.TreesWithFungus:
-					case TerrainType.PalmTrees:
-					case TerrainType.PalmTreesWithCoconuts:
+					case TerrainType.Tree:
+					case TerrainType.BareTree:
+					case TerrainType.BarePalmTree:
+					case TerrainType.TreeWithVines:
+					case TerrainType.TreeWithBerries:
+					case TerrainType.TreeWithFungus:
+					case TerrainType.PalmTree:
+					case TerrainType.PalmTreeWithCoconuts:
 						if (Utilities.Random.nextFloat() <= doodadChance) {
 							terrainType = this.terrainCloudBoulder;
-						}
-						else {
+						} else {
 							terrainType = this.terrainCloud;
 						}
 						break;
@@ -173,21 +174,20 @@ class Mod extends Mods.Mod {
 			}
 		}
 
-		for (var x = 0; x < game.mapSize; x++) {
-			for (var y = 0; y < game.mapSize; y++) {
+		for (let x = 0; x < game.mapSize; x++) {
+			for (let y = 0; y < game.mapSize; y++) {
 				terrainType = Utilities.TileHelpers.getType(game.getTile(x, y, Mod.TroposphereZ));
 
 				if (generateNewWorld) {
 					switch (terrainType) {
 						case this.terrainCloud:
 						case this.terrainStorm:
-							var chance = Utilities.Random.nextFloat();
-							var aberrantChance = terrainType === this.terrainCloud ? monsterAberrantChance : monsterAberrantStormChance;
+							let chance = Utilities.Random.nextFloat();
+							let aberrantChance = terrainType === this.terrainCloud ? monsterAberrantChance : monsterAberrantStormChance;
 							if (chance <= monsterSpriteChance) {
 								game.spawnMonster(this.monsterSprite, x, y, Mod.TroposphereZ, true, Utilities.Random.nextFloat() <= aberrantChance);
-							}
-							else if (chance <= monsterChance) {
-								var monsterType = this.monsterPool[Utilities.Random.nextInt(this.monsterPool.length)];
+							} else if (chance <= monsterChance) {
+								let monsterType = this.monsterPool[Utilities.Random.nextInt(this.monsterPool.length)];
 								game.spawnMonster(monsterType, x, y, Mod.TroposphereZ, true, Utilities.Random.nextFloat() <= aberrantChance);
 							}
 
@@ -204,14 +204,14 @@ class Mod extends Mods.Mod {
 		}
 
 		if (this.falling) {
-			var turnProgress = 1 - Math.min(1, Math.max(0, (game.nextProcessInput - game.time) / (Delay.Collision * game.interval)));
+			let turnProgress = 1 - Math.min(1, Math.max(0, (game.nextProcessInput - game.time) / (Delay.Collision * game.interval)));
 			tileScale = Utilities.easeInCubic(turnProgress, tileScale * 0.25, tileScale * 0.75, 1.0);
 			game.updateRender = true;
 		} else {
 			tileScale *= 0.25;
 		}
-		var scrollX = Utilities.lerp(player.fromX, player.x, game.turnProgress);
-		var scrollY = Utilities.lerp(player.fromY, player.y, game.turnProgress);
+		let scrollX = Utilities.lerp(player.fromX, player.x, game.turnProgress);
+		let scrollY = Utilities.lerp(player.fromY, player.y, game.turnProgress);
 		renderer.layers[Z_NORMAL].renderFullbright(scrollX, scrollY, tileScale, viewWidth, viewHeight);
 		renderer.layers[Z_NORMAL].postRenderFullbright(scrollX, scrollY, tileScale, viewWidth, viewHeight);
 	}
@@ -224,7 +224,7 @@ class Mod extends Mods.Mod {
 	}
 
 	public onGameStart(isLoadingSave: boolean): void {
-		if (!isLoadingSave) {
+		if (!isLoadingSave || this.firstLoad) {
 			// give nimbus
 			Item.create(this.itemNimbus);
 		}
@@ -249,11 +249,11 @@ class Mod extends Mods.Mod {
 			this.falling = false;
 			this.setFlying(false, false);
 
-			//fall damage
+			// fall damage
 			ui.displayMessage(this.messageFellToLand, MessageType.Bad);
 
-			var tile = game.getTile(player.x, player.y, player.z);
-			var terrainType = Utilities.TileHelpers.getType(tile);
+			let tile = game.getTile(player.x, player.y, player.z);
+			let terrainType = Utilities.TileHelpers.getType(tile);
 			if (TileAtlas.isWater(terrainType)) {
 				player.damage(-30, messages[this.messageDeathByFalling]);
 			} else {
@@ -264,21 +264,21 @@ class Mod extends Mods.Mod {
 			game.passTurn();
 
 		} else {
-			var tile = game.getTile(player.x, player.y, player.z);
-			var terrainType = Utilities.TileHelpers.getType(tile);
+			let tile = game.getTile(player.x, player.y, player.z);
+			let terrainType = Utilities.TileHelpers.getType(tile);
 
 			if (terrainType === this.terrainHole) {
 				this.falling = true;
 				game.addDelay(Delay.Collision, true);
 				game.passTurn();
-				game.fov.compute(false); //no light blocking
+				game.fov.compute(false); // no light blocking
 			}
 		}
 	}
 
 	public initializeItems() {
-		var actionTypeFly = this.addActionType("Fly", "Fly to/from the Troposphere.", (item: Item.IItem) => this.onNimbus(item));
-		var actionTypeGatherRainbow = this.addActionType("Gather Rainbow", "Gather a Rainbow.", (item: Item.IItem) => this.onGatherRainbow(item));
+		let actionTypeFly = this.addActionType("Fly", "Fly to/from the Troposphere.", (item: Item.IItem) => this.onNimbus(item));
+		let actionTypeGatherRainbow = this.addActionType("Gather Rainbow", "Gather a Rainbow.", (item: Item.IItem) => this.onGatherRainbow(item));
 
 		this.itemNimbus = this.addItem({
 			description: "A Flying Nimbus.",
@@ -324,11 +324,11 @@ class Mod extends Mods.Mod {
 
 	public initializeDoodads() {
 		this.doodadCloudBoulder = this.addDoodad({
-			name: "CloudBoulder"
+			name: "Cloud Boulder"
 		});
 
 		this.doodadStormBoulder = this.addDoodad({
-			name: "StormBoulder"
+			name: "Storm Boulder"
 		});
 
 		this.doodadRainbow = this.addDoodad({
@@ -340,7 +340,7 @@ class Mod extends Mods.Mod {
 	public initializeTerrain() {
 
 		this.terrainCloudWater = this.addTerrain({
-			name: "CloudWater",
+			name: "Cloud Water",
 			passable: true,
 			shallowWater: true,
 			particles: [47, 128, 157],
@@ -366,7 +366,7 @@ class Mod extends Mods.Mod {
 		}, this.terrainCloud);
 
 		this.terrainCloudBoulder = this.addTerrain({
-			name: "CloudBoulder",
+			name: "Cloud Boulder",
 			particles: [250, 250, 250],
 			strength: 1,
 			skill: SkillType.Lumberjacking,
@@ -394,8 +394,8 @@ class Mod extends Mods.Mod {
 		});
 
 		this.addTerrainResource(this.terrainCloudstone, [{
-			item: this.itemCloudstone,
-			itemChance: 45
+			type: this.itemCloudstone,
+			chance: 45
 		}]);
 
 		this.terrainStorm = this.addTerrain({
@@ -406,7 +406,7 @@ class Mod extends Mods.Mod {
 		});
 
 		this.terrainStormBoulder = this.addTerrain({
-			name: "Storm",
+			name: "Storm Boulder",
 			particles: [20, 20, 20],
 			strength: 2,
 			skill: SkillType.Lumberjacking,
@@ -434,8 +434,8 @@ class Mod extends Mods.Mod {
 		});
 
 		this.addTerrainResource(this.terrainStormstone, [{
-			item: this.itemCloudstone,
-			itemChance: 100
+			type: this.itemCloudstone,
+			chance: 100
 		}]);
 
 		this.terrainHole = this.addTerrain({
@@ -465,11 +465,14 @@ class Mod extends Mods.Mod {
 			moveType: MoveType.Land | MoveType.ShallowWater | MoveType.Water,
 			canCauseStatus: [StatusType.Bleeding],
 			spawnTiles: MonsterSpawnableTiles.None,
-			spawnTalent: 16000,
+			spawnMalignity: 16000,
+			malignity: -300,
 			makeNoise: true,
 			breaksWalls: true,
-			loot: [this.itemRainbow],
-			lootChance: 0.5,
+			loot: [{
+				item: this.itemRainbow,
+				chance: 50
+			}],
 			noCorpse: true
 		});
 
@@ -487,7 +490,7 @@ class Mod extends Mods.Mod {
 			ai: MonsterAiType.Scared,
 			moveType: MoveType.Land | MoveType.ShallowWater,
 			spawnTiles: MonsterSpawnableTiles.None,
-			spawnTalent: 0,
+			malignity: 200,
 			makeNoise: true,
 			jumpOver: true
 		});
@@ -509,13 +512,14 @@ class Mod extends Mods.Mod {
 			damageType: DamageType.Piercing,
 			ai: MonsterAiType.Neutral,
 			moveType: MoveType.Flying,
+			malignity: -100,
 			spawnTiles: MonsterSpawnableTiles.None,
-			loot: [ItemType.Feather, ItemType.Feather],
+			loot: [{ item: ItemType.Feather }, { item: ItemType.Feather }],
 			lootGroup: LootGroupType.Low
 		});
 
 		this.monsterLightningElemental = this.addMonster({
-			name: "LightningElemental",
+			name: "Lightning Elemental",
 			minhp: 30,
 			maxhp: 38,
 			minatk: 11,
@@ -531,10 +535,11 @@ class Mod extends Mods.Mod {
 			moveType: MoveType.Flying,
 			spawnTiles: MonsterSpawnableTiles.None,
 			lootGroup: LootGroupType.High,
-			loot: [ItemType.PileOfAsh],
+			loot: [{ item: ItemType.PileOfAsh }],
 			blood: [210, 125, 20],
 			canCauseStatus: [StatusType.Bleeding],
-			spawnTalent: 32000,
+			spawnMalignity: 32000,
+			malignity: -300,
 			makeNoise: true
 		});
 
@@ -555,10 +560,11 @@ class Mod extends Mods.Mod {
 			moveType: MoveType.Flying,
 			spawnTiles: MonsterSpawnableTiles.None,
 			lootGroup: LootGroupType.High,
-			loot: [ItemType.PileOfAsh],
+			loot: [{ item: ItemType.PileOfAsh }],
 			blood: [210, 125, 20],
 			canCauseStatus: [StatusType.Bleeding],
-			spawnTalent: 32000,
+			spawnMalignity: 32000,
+			malignity: -500,
 			makeNoise: true
 		});
 
@@ -570,14 +576,14 @@ class Mod extends Mods.Mod {
 	}
 
 	public onGatherRainbow(item: Item.IItem): any {
-		var tile = game.getTileInFrontOfPlayer();
-		var tileType = Utilities.TileHelpers.getType(tile);
+		let tile = game.getTileInFrontOfPlayer();
+		let tileType = Utilities.TileHelpers.getType(tile);
 		if (tileType === this.terrainRainbow) {
 			ui.displayMessage(this.messageGatheredRainbow);
 
-			game.createParticles(12, 128, 247);
+			game.createParticles(player.x + player.direction.x, player.y + player.direction.y, 12, 128, 247);
 
-			var newItem = Item.create(this.itemRainbowGlassBottle, item.quality);
+			let newItem = Item.create(this.itemRainbowGlassBottle, item.quality);
 			newItem.decay = item.decay;
 			newItem.minDur = item.minDur;
 			newItem.maxDur = item.maxDur;
@@ -586,8 +592,7 @@ class Mod extends Mods.Mod {
 
 			game.changeTile({ type: this.terrainCloud }, player.x + player.direction.x, player.y + player.direction.y, player.z, false);
 			game.passTurn();
-		}
-		else {
+		} else {
 			ui.displayMessage(this.messageNoRainbow);
 		}
 	}
@@ -618,7 +623,7 @@ class Mod extends Mods.Mod {
 			return;
 		}
 
-		var monsterObj = <any>monster;
+		let monsterObj = <any>monster;
 		monsterObj.justAttacked = true;
 	}
 
@@ -627,7 +632,7 @@ class Mod extends Mods.Mod {
 			return;
 		}
 
-		var monsterObj = <any>monster;
+		let monsterObj = <any>monster;
 
 		if (monsterObj.justAttacked) {
 			monsterObj.justAttacked = undefined;
@@ -645,9 +650,9 @@ class Mod extends Mods.Mod {
 	}
 
 	public setFlying(flying: boolean, passTurn: boolean): boolean {
-		var z = !flying ? Z_NORMAL : Mod.TroposphereZ;
+		let z = !flying ? Z_NORMAL : Mod.TroposphereZ;
 
-		var openTile = this.findOpenTile(z);
+		let openTile = this.findOpenTile(z);
 		if (openTile === null || player.z === Z_CAVE) {
 			if (passTurn) {
 				ui.displayMessage(flying ? this.messageFlewToTroposphereFailure : this.messageFlewToLandFailure, MessageType.Bad);
@@ -674,18 +679,18 @@ class Mod extends Mods.Mod {
 
 	public findOpenTile(z: number): IPoint {
 
-		var q: IPoint[] = [{ x: player.x, y: player.y }];
-		var visited: string[] = [];
-		var tilesChecked = 0;
+		let q: IPoint[] = [{ x: player.x, y: player.y }];
+		let visited: string[] = [];
+		let tilesChecked = 0;
 
-		var indexPoint = (point: IPoint) => {
+		let indexPoint = (point: IPoint) => {
 			return `${point.x},${point.y}`;
 		};
 
 		while (q.length > 0) {
-			var point = q.pop();
+			let point = q.pop();
 
-			var tile = game.getTile(point.x, point.y, z);
+			let tile = game.getTile(point.x, point.y, z);
 			if (!tile) {
 				continue;
 			}
@@ -694,9 +699,9 @@ class Mod extends Mods.Mod {
 				return point;
 			}
 
-			for (var i = 0; i < 4; i++) {
+			for (let i = 0; i < 4; i++) {
 
-				var neighbor: IPoint = { x: point.x, y: point.y };
+				let neighbor: IPoint = { x: point.x, y: point.y };
 
 				switch (i) {
 					case 0:
@@ -741,12 +746,12 @@ class Mod extends Mods.Mod {
 			return false;
 		}
 
-		var terrainType = Utilities.TileHelpers.getType(tile);
+		let terrainType = Utilities.TileHelpers.getType(tile);
 		if (terrainType === this.terrainHole) {
 			return false;
 		}
 
-		var terrainInfo = terrains[terrainType];
+		let terrainInfo = terrains[terrainType];
 
 		return terrainInfo.water || terrainInfo.passable;
 	}

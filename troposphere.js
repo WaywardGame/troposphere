@@ -13,7 +13,8 @@ var Mod = (function (_super) {
     };
     Mod.prototype.onLoad = function (data) {
         this.data = data;
-        if (!this.data) {
+        this.firstLoad = !this.data;
+        if (this.firstLoad) {
             this.data = {
                 seed: new Date().getTime(),
                 flying: false,
@@ -77,14 +78,14 @@ var Mod = (function (_super) {
                             terrainType = this.terrainStorm;
                         }
                         break;
-                    case TerrainType.Trees:
-                    case TerrainType.BareTrees:
-                    case TerrainType.BarePalmTrees:
-                    case TerrainType.TreesWithVines:
-                    case TerrainType.TreesWithBerries:
-                    case TerrainType.TreesWithFungus:
-                    case TerrainType.PalmTrees:
-                    case TerrainType.PalmTreesWithCoconuts:
+                    case TerrainType.Tree:
+                    case TerrainType.BareTree:
+                    case TerrainType.BarePalmTree:
+                    case TerrainType.TreeWithVines:
+                    case TerrainType.TreeWithBerries:
+                    case TerrainType.TreeWithFungus:
+                    case TerrainType.PalmTree:
+                    case TerrainType.PalmTreeWithCoconuts:
                         if (Utilities.Random.nextFloat() <= doodadChance) {
                             terrainType = this.terrainCloudBoulder;
                         }
@@ -154,7 +155,7 @@ var Mod = (function (_super) {
         return RenderFlag.Player;
     };
     Mod.prototype.onGameStart = function (isLoadingSave) {
-        if (!isLoadingSave) {
+        if (!isLoadingSave || this.firstLoad) {
             Item.create(this.itemNimbus);
         }
     };
@@ -236,10 +237,10 @@ var Mod = (function (_super) {
     };
     Mod.prototype.initializeDoodads = function () {
         this.doodadCloudBoulder = this.addDoodad({
-            name: "CloudBoulder"
+            name: "Cloud Boulder"
         });
         this.doodadStormBoulder = this.addDoodad({
-            name: "StormBoulder"
+            name: "Storm Boulder"
         });
         this.doodadRainbow = this.addDoodad({
             name: "Rainbow",
@@ -248,7 +249,7 @@ var Mod = (function (_super) {
     };
     Mod.prototype.initializeTerrain = function () {
         this.terrainCloudWater = this.addTerrain({
-            name: "CloudWater",
+            name: "Cloud Water",
             passable: true,
             shallowWater: true,
             particles: [47, 128, 157],
@@ -271,7 +272,7 @@ var Mod = (function (_super) {
             doodad: this.doodadRainbow
         }, this.terrainCloud);
         this.terrainCloudBoulder = this.addTerrain({
-            name: "CloudBoulder",
+            name: "Cloud Boulder",
             particles: [250, 250, 250],
             strength: 1,
             skill: SkillType.Lumberjacking,
@@ -297,8 +298,8 @@ var Mod = (function (_super) {
             noBackground: true
         });
         this.addTerrainResource(this.terrainCloudstone, [{
-                item: this.itemCloudstone,
-                itemChance: 45
+                type: this.itemCloudstone,
+                chance: 45
             }]);
         this.terrainStorm = this.addTerrain({
             name: "Storm",
@@ -307,7 +308,7 @@ var Mod = (function (_super) {
             noBackground: true
         });
         this.terrainStormBoulder = this.addTerrain({
-            name: "Storm",
+            name: "Storm Boulder",
             particles: [20, 20, 20],
             strength: 2,
             skill: SkillType.Lumberjacking,
@@ -333,8 +334,8 @@ var Mod = (function (_super) {
             noBackground: true
         });
         this.addTerrainResource(this.terrainStormstone, [{
-                item: this.itemCloudstone,
-                itemChance: 100
+                type: this.itemCloudstone,
+                chance: 100
             }]);
         this.terrainHole = this.addTerrain({
             name: "Hole",
@@ -356,11 +357,14 @@ var Mod = (function (_super) {
             moveType: MoveType.Land | MoveType.ShallowWater | MoveType.Water,
             canCauseStatus: [StatusType.Bleeding],
             spawnTiles: MonsterSpawnableTiles.None,
-            spawnTalent: 16000,
+            spawnMalignity: 16000,
+            malignity: -300,
             makeNoise: true,
             breaksWalls: true,
-            loot: [this.itemRainbow],
-            lootChance: 0.5,
+            loot: [{
+                    item: this.itemRainbow,
+                    chance: 50
+                }],
             noCorpse: true
         });
         this.monsterRabbit = this.addMonster({
@@ -374,7 +378,7 @@ var Mod = (function (_super) {
             ai: MonsterAiType.Scared,
             moveType: MoveType.Land | MoveType.ShallowWater,
             spawnTiles: MonsterSpawnableTiles.None,
-            spawnTalent: 0,
+            malignity: 200,
             makeNoise: true,
             jumpOver: true
         });
@@ -388,12 +392,13 @@ var Mod = (function (_super) {
             damageType: DamageType.Piercing,
             ai: MonsterAiType.Neutral,
             moveType: MoveType.Flying,
+            malignity: -100,
             spawnTiles: MonsterSpawnableTiles.None,
-            loot: [ItemType.Feather, ItemType.Feather],
+            loot: [{ item: ItemType.Feather }, { item: ItemType.Feather }],
             lootGroup: LootGroupType.Low
         });
         this.monsterLightningElemental = this.addMonster({
-            name: "LightningElemental",
+            name: "Lightning Elemental",
             minhp: 30,
             maxhp: 38,
             minatk: 11,
@@ -404,10 +409,11 @@ var Mod = (function (_super) {
             moveType: MoveType.Flying,
             spawnTiles: MonsterSpawnableTiles.None,
             lootGroup: LootGroupType.High,
-            loot: [ItemType.PileOfAsh],
+            loot: [{ item: ItemType.PileOfAsh }],
             blood: [210, 125, 20],
             canCauseStatus: [StatusType.Bleeding],
-            spawnTalent: 32000,
+            spawnMalignity: 32000,
+            malignity: -300,
             makeNoise: true
         });
         this.monsterSprite = this.addMonster({
@@ -422,10 +428,11 @@ var Mod = (function (_super) {
             moveType: MoveType.Flying,
             spawnTiles: MonsterSpawnableTiles.None,
             lootGroup: LootGroupType.High,
-            loot: [ItemType.PileOfAsh],
+            loot: [{ item: ItemType.PileOfAsh }],
             blood: [210, 125, 20],
             canCauseStatus: [StatusType.Bleeding],
-            spawnTalent: 32000,
+            spawnMalignity: 32000,
+            malignity: -500,
             makeNoise: true
         });
         this.monsterPool = [this.monsterBear, this.monsterRabbit, this.monsterCloudling, this.monsterLightningElemental];
@@ -438,7 +445,7 @@ var Mod = (function (_super) {
         var tileType = Utilities.TileHelpers.getType(tile);
         if (tileType === this.terrainRainbow) {
             ui.displayMessage(this.messageGatheredRainbow);
-            game.createParticles(12, 128, 247);
+            game.createParticles(player.x + player.direction.x, player.y + player.direction.y, 12, 128, 247);
             var newItem = Item.create(this.itemRainbowGlassBottle, item.quality);
             newItem.decay = item.decay;
             newItem.minDur = item.minDur;

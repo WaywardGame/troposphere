@@ -40,6 +40,7 @@ declare class Mod extends Mods.Mod {
     private messageGatheredRainbow;
     private messageNoRainbow;
     private data;
+    private firstLoad;
     onInitialize(saveDataGlobal: any): any;
     onLoad(data: any): void;
     onUnload(): void;

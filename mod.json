@@ -1,7 +1,7 @@
 {
 	"name": "Troposphere",
 	"description": "Adds a magical world of clouds!",
-	"version": "1.0.1",
+	"version": "1.1.0",
 	"author": "Spacetech",
 	"hooks": [
 		"CanMonsterAttack",
@@ -17,10 +17,10 @@
 		"PreRenderWorld",
 		"ShouldRender"
 	],
-	"compatible_minor_versions": [
-		0
-	],
 	"unloadable": false,
+	"compatible_minor_versions": [
+		1
+	],
 	"files": [
 		"troposphere.js"
 	],
