@@ -1,7 +1,7 @@
 # Troposphere
 Adds a magical world of clouds!
 
-Fly up into the cloud world with a brand new item called the "Nimbus". You can expect to find new items, uses, terrain, and even monsters. You can even take a peek at the world down below. But make sure not to fall down!
+Fly up into the cloud world with a brand new item called the "Nimbus". You can expect to find new items, uses, terrain, and even creatures. You can even take a peek at the world down below. But make sure not to fall down!
 
 ## Cloning:
 ```

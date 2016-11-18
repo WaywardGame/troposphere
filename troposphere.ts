@@ -5,8 +5,8 @@ interface ITroposphereData {
 	flying: boolean;
 };
 
-class Mod extends Mods.Mod {
-	private static TroposphereZ: number = Z_MAX + 1;
+export default class Mod extends Mods.Mod {
+	private static readonly troposphereZ: number = Z_MAX + 1;
 
 	private moving: boolean;
 	private falling: boolean;
@@ -32,12 +32,12 @@ class Mod extends Mods.Mod {
 	private terrainStormstone: number;
 	private terrainHole: number;
 
-	private monsterBear: number;
-	private monsterRabbit: number;
-	private monsterCloudling: number;
-	private monsterLightningElemental: number;
-	private monsterSprite: number;
-	private monsterPool: number[];
+	private creatureBear: number;
+	private creatureRabbit: number;
+	private creatureCloudling: number;
+	private creatureLightningElemental: number;
+	private creatureSprite: number;
+	private creaturePool: number[];
 
 	private messageFlewToTroposphere: number;
 	private messageFlewToTroposphereFailure: number;
@@ -63,13 +63,12 @@ class Mod extends Mods.Mod {
 				seed: new Date().getTime(),
 				flying: false,
 			};
-
 		}
 
 		this.initializeItems();
 		this.initializeDoodads();
 		this.initializeTerrain();
-		this.initializeMonsters();
+		this.initializeCreatures();
 
 		this.messageFlewToTroposphere = this.addMessage("FlewToTroposphere", "You flew to the Troposphere.");
 		this.messageFlewToTroposphereFailure = this.addMessage("FlewToTroposphereFailure", "You are unable to fly to the Troposphere. Try flying from another spot.");
@@ -90,7 +89,7 @@ class Mod extends Mods.Mod {
 	}
 
 	public onCreateWorld(world: World) {
-		world.addLayer(Mod.TroposphereZ);
+		world.addLayer(Mod.troposphereZ);
 	}
 
 	public postGenerateWorld(generateNewWorld: boolean) {
@@ -100,22 +99,22 @@ class Mod extends Mods.Mod {
 
 		let terrainHoleChance = 0.02;
 
-		let monsterChance = 0.0025;
-		let monsterSpriteChance = 0.0001;
-		let monsterAberrantChance = 0.05;
-		let monsterAberrantStormChance = 0.50;
+		let creatureChance = 0.0025;
+		let creatureSpriteChance = 0.0001;
+		let creatureAberrantChance = 0.05;
+		let creatureAberrantStormChance = 0.50;
 
-		let tile: ITile;
+		let tile: Terrain.ITile;
 		let terrainType: number;
 
 		Utilities.Random.setSeed(this.data.seed);
 
 		for (let x = 0; x < game.mapSize; x++) {
 			for (let y = 0; y < game.mapSize; y++) {
-				tile = game.setTile(x, y, Mod.TroposphereZ, game.getTile(x, y, Mod.TroposphereZ) || <ITile>{});
+				tile = game.setTile(x, y, Mod.troposphereZ, game.getTile(x, y, Mod.troposphereZ) || <Terrain.ITile>{});
 
 				let tileGfx = 0;
-				let normalTerrainType = terrains[Utilities.TileHelpers.getType(game.getTile(x, y, Z_NORMAL))].terrainType;
+				let normalTerrainType = Terrain.defines[Utilities.TileHelpers.getType(game.getTile(x, y, Z_NORMAL))].terrainType;
 
 				switch (normalTerrainType) {
 					case TerrainType.Rocks:
@@ -176,19 +175,19 @@ class Mod extends Mods.Mod {
 
 		for (let x = 0; x < game.mapSize; x++) {
 			for (let y = 0; y < game.mapSize; y++) {
-				terrainType = Utilities.TileHelpers.getType(game.getTile(x, y, Mod.TroposphereZ));
+				terrainType = Utilities.TileHelpers.getType(game.getTile(x, y, Mod.troposphereZ));
 
 				if (generateNewWorld) {
 					switch (terrainType) {
 						case this.terrainCloud:
 						case this.terrainStorm:
 							let chance = Utilities.Random.nextFloat();
-							let aberrantChance = terrainType === this.terrainCloud ? monsterAberrantChance : monsterAberrantStormChance;
-							if (chance <= monsterSpriteChance) {
-								game.spawnMonster(this.monsterSprite, x, y, Mod.TroposphereZ, true, Utilities.Random.nextFloat() <= aberrantChance);
-							} else if (chance <= monsterChance) {
-								let monsterType = this.monsterPool[Utilities.Random.nextInt(this.monsterPool.length)];
-								game.spawnMonster(monsterType, x, y, Mod.TroposphereZ, true, Utilities.Random.nextFloat() <= aberrantChance);
+							let aberrantChance = terrainType === this.terrainCloud ? creatureAberrantChance : creatureAberrantStormChance;
+							if (chance <= creatureSpriteChance) {
+								Creature.spawn(this.creatureSprite, x, y, Mod.troposphereZ, true, Utilities.Random.nextFloat() <= aberrantChance);
+							} else if (chance <= creatureChance) {
+								let creatureType = this.creaturePool[Utilities.Random.nextInt(this.creaturePool.length)];
+								Creature.spawn(creatureType, x, y, Mod.troposphereZ, true, Utilities.Random.nextFloat() <= aberrantChance);
 							}
 
 							break;
@@ -210,6 +209,7 @@ class Mod extends Mods.Mod {
 		} else {
 			tileScale *= 0.25;
 		}
+
 		let scrollX = Utilities.lerp(player.fromX, player.x, game.turnProgress);
 		let scrollY = Utilities.lerp(player.fromY, player.y, game.turnProgress);
 		renderer.layers[Z_NORMAL].renderFullbright(scrollX, scrollY, tileScale, viewWidth, viewHeight);
@@ -258,7 +258,7 @@ class Mod extends Mods.Mod {
 				player.damage(-30, messages[this.messageDeathByFalling]);
 			} else {
 				player.damage(-40, messages[this.messageDeathByFalling]);
-				game.placeCorpse({ type: MonsterType.Blood, x: player.x, y: player.y, z: player.z });
+				Corpse.create({ type: CreatureType.Blood, x: player.x, y: player.y, z: player.z });
 			}
 
 			game.passTurn();
@@ -324,21 +324,23 @@ class Mod extends Mods.Mod {
 
 	public initializeDoodads() {
 		this.doodadCloudBoulder = this.addDoodad({
-			name: "Cloud Boulder"
+			name: "Cloud Boulder",
+			particles: [176, 153, 134]
 		});
 
 		this.doodadStormBoulder = this.addDoodad({
-			name: "Storm Boulder"
+			name: "Storm Boulder",
+			particles: [176, 153, 134]
 		});
 
 		this.doodadRainbow = this.addDoodad({
 			name: "Rainbow",
+			particles: [176, 153, 134],
 			blockMove: true
 		});
 	}
 
 	public initializeTerrain() {
-
 		this.terrainCloudWater = this.addTerrain({
 			name: "Cloud Water",
 			passable: true,
@@ -446,8 +448,8 @@ class Mod extends Mods.Mod {
 		});
 	}
 
-	public initializeMonsters() {
-		this.monsterBear = this.addMonster({
+	public initializeCreatures() {
+		this.creatureBear = this.addCreature({
 			name: "Cloud Bear",
 			minhp: 18,
 			maxhp: 21,
@@ -461,14 +463,13 @@ class Mod extends Mods.Mod {
 				new Vulnerabilities()
 			),
 			damageType: DamageType.Slashing | DamageType.Blunt,
-			ai: MonsterAiType.Hostile,
-			moveType: MoveType.Land | MoveType.ShallowWater | MoveType.Water,
+			ai: Creature.AiType.Hostile,
+			moveType: MoveType.Land | MoveType.ShallowWater | MoveType.Water | MoveType.BreakWalls,
 			canCauseStatus: [StatusType.Bleeding],
-			spawnTiles: MonsterSpawnableTiles.None,
+			spawnTiles: Creature.SpawnableTiles.None,
 			spawnMalignity: 16000,
 			malignity: -300,
 			makeNoise: true,
-			breaksWalls: true,
 			loot: [{
 				item: this.itemRainbow,
 				chance: 50
@@ -476,7 +477,7 @@ class Mod extends Mods.Mod {
 			noCorpse: true
 		});
 
-		this.monsterRabbit = this.addMonster({
+		this.creatureRabbit = this.addCreature({
 			name: "Cloud Rabbit",
 			minhp: 3,
 			maxhp: 6,
@@ -487,15 +488,15 @@ class Mod extends Mods.Mod {
 				new Vulnerabilities()
 			),
 			damageType: DamageType.Slashing,
-			ai: MonsterAiType.Scared,
+			ai: Creature.AiType.Scared,
 			moveType: MoveType.Land | MoveType.ShallowWater,
-			spawnTiles: MonsterSpawnableTiles.None,
+			spawnTiles: Creature.SpawnableTiles.None,
 			malignity: 200,
 			makeNoise: true,
 			jumpOver: true
 		});
 
-		this.monsterCloudling = this.addMonster({
+		this.creatureCloudling = this.addCreature({
 			name: "Cloudling",
 			minhp: 4,
 			maxhp: 9,
@@ -510,15 +511,15 @@ class Mod extends Mods.Mod {
 				)
 			),
 			damageType: DamageType.Piercing,
-			ai: MonsterAiType.Neutral,
+			ai: Creature.AiType.Neutral,
 			moveType: MoveType.Flying,
 			malignity: -100,
-			spawnTiles: MonsterSpawnableTiles.None,
+			spawnTiles: Creature.SpawnableTiles.None,
 			loot: [{ item: ItemType.Feather }, { item: ItemType.Feather }],
 			lootGroup: LootGroupType.Low
 		});
 
-		this.monsterLightningElemental = this.addMonster({
+		this.creatureLightningElemental = this.addCreature({
 			name: "Lightning Elemental",
 			minhp: 30,
 			maxhp: 38,
@@ -531,9 +532,9 @@ class Mod extends Mods.Mod {
 				new Vulnerabilities()
 			),
 			damageType: DamageType.Fire | DamageType.Blunt,
-			ai: MonsterAiType.Hostile,
+			ai: Creature.AiType.Hostile,
 			moveType: MoveType.Flying,
-			spawnTiles: MonsterSpawnableTiles.None,
+			spawnTiles: Creature.SpawnableTiles.None,
 			lootGroup: LootGroupType.High,
 			loot: [{ item: ItemType.PileOfAsh }],
 			blood: [210, 125, 20],
@@ -543,7 +544,7 @@ class Mod extends Mods.Mod {
 			makeNoise: true
 		});
 
-		this.monsterSprite = this.addMonster({
+		this.creatureSprite = this.addCreature({
 			name: "Sprite",
 			minhp: 30,
 			maxhp: 38,
@@ -556,9 +557,9 @@ class Mod extends Mods.Mod {
 				new Vulnerabilities()
 			),
 			damageType: DamageType.Fire | DamageType.Blunt,
-			ai: MonsterAiType.Hostile,
+			ai: Creature.AiType.Hostile,
 			moveType: MoveType.Flying,
-			spawnTiles: MonsterSpawnableTiles.None,
+			spawnTiles: Creature.SpawnableTiles.None,
 			lootGroup: LootGroupType.High,
 			loot: [{ item: ItemType.PileOfAsh }],
 			blood: [210, 125, 20],
@@ -568,7 +569,7 @@ class Mod extends Mods.Mod {
 			makeNoise: true
 		});
 
-		this.monsterPool = [this.monsterBear, this.monsterRabbit, this.monsterCloudling, this.monsterLightningElemental];
+		this.creaturePool = [this.creatureBear, this.creatureRabbit, this.creatureCloudling, this.creatureLightningElemental];
 	}
 
 	public onNimbus(item: Item.IItem): any {
@@ -605,52 +606,52 @@ class Mod extends Mods.Mod {
 		return undefined;
 	}
 
-	public onSpawnMonsterFromGroup(monsterGroup: MonsterSpawnGroup, monsterPool: MonsterType[], x: number, y: number, z: number): boolean {
-		if (z !== Mod.TroposphereZ) {
+	public onSpawnCreatureFromGroup(creatureGroup: Creature.SpawnGroup, creaturePool: CreatureType[], x: number, y: number, z: number): boolean {
+		if (z !== Mod.troposphereZ) {
 			return undefined;
 		}
-		monsterPool.push.apply(monsterPool, this.monsterPool);
+		creaturePool.push.apply(creaturePool, this.creaturePool);
 	}
 
-	public canMonsterMove(monsterId: number, monster: IMonster, tile?: ITile): boolean {
+	public canCreatureMove(creatureId: number, creature: Creature.ICreature, tile?: Terrain.ITile): boolean {
 		if (tile && Utilities.TileHelpers.getType(tile) === this.terrainHole) {
-			return monster.type !== this.monsterBear && monster.type !== this.monsterRabbit;
+			return creature.type !== this.creatureBear && creature.type !== this.creatureRabbit;
 		}
 	}
 
-	public canMonsterAttack(monsterId: number, monster: IMonster): boolean {
-		if (monster.type !== this.monsterSprite) {
+	public canCreatureAttack(creatureId: number, creature: Creature.ICreature): boolean {
+		if (creature.type !== this.creatureSprite) {
 			return;
 		}
 
-		let monsterObj = <any>monster;
-		monsterObj.justAttacked = true;
+		let creatureObj = <any>creature;
+		creatureObj.justAttacked = true;
 	}
 
-	public canSeeMonster(monsterId: number, monster: IMonster, tile: ITile): boolean {
-		if (monster.type !== this.monsterSprite) {
+	public canSeeCreature(creatureId: number, creature: Creature.ICreature, tile: Terrain.ITile): boolean {
+		if (creature.type !== this.creatureSprite) {
 			return;
 		}
 
-		let monsterObj = <any>monster;
+		let creatureObj = <any>creature;
 
-		if (monsterObj.justAttacked) {
-			monsterObj.justAttacked = undefined;
+		if (creatureObj.justAttacked) {
+			creatureObj.justAttacked = undefined;
 			return;
 		}
 
-		if (monsterObj.nextVisibleCount === undefined || monsterObj.nextVisibleCount === 0) {
-			monsterObj.nextVisibleCount = Utilities.Random.randomFromInterval(1, 6);
+		if (creatureObj.nextVisibleCount === undefined || creatureObj.nextVisibleCount === 0) {
+			creatureObj.nextVisibleCount = Utilities.Random.randomFromInterval(1, 6);
 			return;
 		}
 
-		monsterObj.nextVisibleCount--;
+		creatureObj.nextVisibleCount--;
 
 		return false;
 	}
 
 	public setFlying(flying: boolean, passTurn: boolean): boolean {
-		let z = !flying ? Z_NORMAL : Mod.TroposphereZ;
+		let z = !flying ? Z_NORMAL : Mod.troposphereZ;
 
 		let openTile = this.findOpenTile(z);
 		if (openTile === null || player.z === Z_CAVE) {
@@ -737,8 +738,8 @@ class Mod extends Mods.Mod {
 		return null;
 	}
 
-	public isFlyableTile(tile: ITile): boolean {
-		if (tile.monsterId !== undefined && tile.monsterId !== null) {
+	public isFlyableTile(tile: Terrain.ITile): boolean {
+		if (tile.creatureId !== undefined && tile.creatureId !== null) {
 			return false;
 		}
 
@@ -751,8 +752,8 @@ class Mod extends Mods.Mod {
 			return false;
 		}
 
-		let terrainInfo = terrains[terrainType];
+		let terrainInfo = Terrain.defines[terrainType];
 
-		return terrainInfo.water || terrainInfo.passable;
+		return !terrainInfo || (terrainInfo.water || terrainInfo.passable);
 	}
 }

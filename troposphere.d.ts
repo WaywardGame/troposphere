@@ -1,10 +1,6 @@
 /// <reference path="mod-reference/modreference.d.ts" />
-interface ITroposphereData {
-    seed: number;
-    flying: boolean;
-}
-declare class Mod extends Mods.Mod {
-    private static TroposphereZ;
+export default class Mod extends Mods.Mod {
+    private static readonly troposphereZ;
     private moving;
     private falling;
     private itemNimbus;
@@ -25,12 +21,12 @@ declare class Mod extends Mods.Mod {
     private terrainStormBoulder;
     private terrainStormstone;
     private terrainHole;
-    private monsterBear;
-    private monsterRabbit;
-    private monsterCloudling;
-    private monsterLightningElemental;
-    private monsterSprite;
-    private monsterPool;
+    private creatureBear;
+    private creatureRabbit;
+    private creatureCloudling;
+    private creatureLightningElemental;
+    private creatureSprite;
+    private creaturePool;
     private messageFlewToTroposphere;
     private messageFlewToTroposphereFailure;
     private messageFlewToLand;
@@ -55,15 +51,15 @@ declare class Mod extends Mods.Mod {
     initializeItems(): void;
     initializeDoodads(): void;
     initializeTerrain(): void;
-    initializeMonsters(): void;
+    initializeCreatures(): void;
     onNimbus(item: Item.IItem): any;
     onGatherRainbow(item: Item.IItem): any;
     canConsumeItem(itemType: ItemType, actionType: ActionType): boolean;
-    onSpawnMonsterFromGroup(monsterGroup: MonsterSpawnGroup, monsterPool: MonsterType[], x: number, y: number, z: number): boolean;
-    canMonsterMove(monsterId: number, monster: IMonster, tile?: ITile): boolean;
-    canMonsterAttack(monsterId: number, monster: IMonster): boolean;
-    canSeeMonster(monsterId: number, monster: IMonster, tile: ITile): boolean;
+    onSpawnCreatureFromGroup(creatureGroup: Creature.SpawnGroup, creaturePool: CreatureType[], x: number, y: number, z: number): boolean;
+    canCreatureMove(creatureId: number, creature: Creature.ICreature, tile?: Terrain.ITile): boolean;
+    canCreatureAttack(creatureId: number, creature: Creature.ICreature): boolean;
+    canSeeCreature(creatureId: number, creature: Creature.ICreature, tile: Terrain.ITile): boolean;
     setFlying(flying: boolean, passTurn: boolean): boolean;
     findOpenTile(z: number): IPoint;
-    isFlyableTile(tile: ITile): boolean;
+    isFlyableTile(tile: Terrain.ITile): boolean;
 }
