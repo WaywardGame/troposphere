@@ -130,14 +130,14 @@ define(["require", "exports"], function (require, exports) {
             }
             if (this.falling) {
                 let turnProgress = 1 - Math.min(1, Math.max(0, (game.nextProcessInput - game.time) / (Delay.Collision * game.interval)));
-                tileScale = Utilities.easeInCubic(turnProgress, tileScale * 0.25, tileScale * 0.75, 1.0);
+                tileScale = Utilities.Math2.easeInCubic(turnProgress, tileScale * 0.25, tileScale * 0.75, 1.0);
                 game.updateRender = true;
             }
             else {
                 tileScale *= 0.25;
             }
-            let scrollX = Utilities.lerp(player.fromX, player.x, game.turnProgress);
-            let scrollY = Utilities.lerp(player.fromY, player.y, game.turnProgress);
+            let scrollX = Utilities.Math2.lerp(player.fromX, player.x, game.turnProgress);
+            let scrollY = Utilities.Math2.lerp(player.fromY, player.y, game.turnProgress);
             renderer.layers[Z_NORMAL].renderFullbright(scrollX, scrollY, tileScale, viewWidth, viewHeight);
             renderer.layers[Z_NORMAL].postRenderFullbright(scrollX, scrollY, tileScale, viewWidth, viewHeight);
         }
