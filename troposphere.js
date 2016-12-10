@@ -230,15 +230,15 @@ define(["require", "exports"], function (require, exports) {
         initializeDoodads() {
             this.doodadCloudBoulder = this.addDoodad({
                 name: "Cloud Boulder",
-                particles: [176, 153, 134]
+                particles: { r: 176, g: 153, b: 134 }
             });
             this.doodadStormBoulder = this.addDoodad({
                 name: "Storm Boulder",
-                particles: [176, 153, 134]
+                particles: { r: 176, g: 153, b: 134 }
             });
             this.doodadRainbow = this.addDoodad({
                 name: "Rainbow",
-                particles: [176, 153, 134],
+                particles: { r: 176, g: 153, b: 134 },
                 blockMove: true
             });
         }
@@ -247,20 +247,20 @@ define(["require", "exports"], function (require, exports) {
                 name: "Cloud Water",
                 passable: true,
                 shallowWater: true,
-                particles: [47, 128, 157],
+                particles: { r: 47, g: 128, b: 157 },
                 freshWater: true,
                 noBackground: true
             });
             this.terrainCloud = this.addTerrain({
                 name: "Cloud",
                 passable: true,
-                particles: [250, 250, 250],
+                particles: { r: 250, g: 250, b: 250 },
                 noBackground: true
             });
             this.terrainRainbow = this.addTerrain({
                 name: "Rainbow",
                 passable: true,
-                particles: [20, 20, 20],
+                particles: { r: 20, g: 20, b: 20 },
                 gather: true,
                 noGfxSwitch: true,
                 noBackground: true,
@@ -268,7 +268,7 @@ define(["require", "exports"], function (require, exports) {
             }, this.terrainCloud);
             this.terrainCloudBoulder = this.addTerrain({
                 name: "Cloud Boulder",
-                particles: [250, 250, 250],
+                particles: { r: 250, g: 250, b: 250 },
                 strength: 1,
                 skill: SkillType.Lumberjacking,
                 gather: true,
@@ -281,7 +281,7 @@ define(["require", "exports"], function (require, exports) {
             }, this.terrainCloud);
             this.terrainCloudstone = this.addTerrain({
                 name: "Cloudstone",
-                particles: [250, 250, 250],
+                particles: { r: 250, g: 250, b: 250 },
                 strength: 8,
                 skill: SkillType.Mining,
                 gather: true,
@@ -299,12 +299,12 @@ define(["require", "exports"], function (require, exports) {
             this.terrainStorm = this.addTerrain({
                 name: "Storm",
                 passable: true,
-                particles: [20, 20, 20],
+                particles: { r: 20, g: 20, b: 20 },
                 noBackground: true
             });
             this.terrainStormBoulder = this.addTerrain({
                 name: "Storm Boulder",
-                particles: [20, 20, 20],
+                particles: { r: 20, g: 20, b: 20 },
                 strength: 2,
                 skill: SkillType.Lumberjacking,
                 gather: true,
@@ -317,7 +317,7 @@ define(["require", "exports"], function (require, exports) {
             }, this.terrainStorm);
             this.terrainStormstone = this.addTerrain({
                 name: "Stormstone",
-                particles: [20, 20, 20],
+                particles: { r: 20, g: 20, b: 20 },
                 strength: 12,
                 skill: SkillType.Mining,
                 gather: true,
@@ -335,7 +335,7 @@ define(["require", "exports"], function (require, exports) {
             this.terrainHole = this.addTerrain({
                 name: "Hole",
                 passable: true,
-                particles: [250, 250, 250],
+                particles: { r: 250, g: 250, b: 250 },
                 noBackground: true
             });
         }
@@ -404,7 +404,7 @@ define(["require", "exports"], function (require, exports) {
                 spawnTiles: Creature.SpawnableTiles.None,
                 lootGroup: LootGroupType.High,
                 loot: [{ item: ItemType.PileOfAsh }],
-                blood: [210, 125, 20],
+                blood: { r: 210, g: 125, b: 20 },
                 canCauseStatus: [StatusType.Bleeding],
                 spawnMalignity: 32000,
                 malignity: -300,
@@ -423,7 +423,7 @@ define(["require", "exports"], function (require, exports) {
                 spawnTiles: Creature.SpawnableTiles.None,
                 lootGroup: LootGroupType.High,
                 loot: [{ item: ItemType.PileOfAsh }],
-                blood: [210, 125, 20],
+                blood: { r: 210, g: 125, b: 20 },
                 canCauseStatus: [StatusType.Bleeding],
                 spawnMalignity: 32000,
                 malignity: -500,
@@ -439,7 +439,7 @@ define(["require", "exports"], function (require, exports) {
             let tileType = Utilities.TileHelpers.getType(tile);
             if (tileType === this.terrainRainbow) {
                 ui.displayMessage(this.messageGatheredRainbow);
-                game.createParticles(player.x + player.direction.x, player.y + player.direction.y, 12, 128, 247);
+                game.particle.create(player.x + player.direction.x, player.y + player.direction.y, { r: 12, g: 128, b: 247 });
                 let newItem = Item.create(this.itemRainbowGlassBottle, item.quality);
                 newItem.decay = item.decay;
                 newItem.minDur = item.minDur;
