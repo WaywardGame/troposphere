@@ -1,12 +1,22 @@
-﻿/// <reference path="mod-reference/modreference.d.ts"/>
+import { IActionArgument, IActionResult } from "action/IAction";
+import { AiType, ICreature, SpawnableTiles, SpawnGroup } from "creature/ICreature";
+import { ActionType, CreatureType, DamageType, Defense, Delay, HairColor, Hairstyle, IPoint, ItemType, LootGroupType, MoveType, RenderFlag, Resistances, SfxType, SkillType, SkinColor, StatusType, TerrainType, Vulnerabilities, WorldZ } from "Enums";
+import { IItem } from "item/IItem";
+import { messages, MessageType } from "language/Messages";
+import Mod from "mod/Mod";
+import { IPlayer } from "player/IPlayer";
+import IWorld from "renderer/IWorld";
+import { ITile } from "tile/ITerrain";
+import Terrains from "tile/Terrains";
+import * as Utilities from "Utilities";
 
 interface ITroposphereData {
 	seed: number;
 	flying: boolean;
 };
 
-export default class Mod extends Mods.Mod {
-	private static readonly troposphereZ: number = Z_MAX + 1;
+export default class Troposphere extends Mod {
+	private static readonly troposphereZ: number = WorldZ.Max + 1;
 
 	private moving: boolean;
 	private falling: boolean;
@@ -39,6 +49,10 @@ export default class Mod extends Mods.Mod {
 	private creatureSprite: number;
 	private creaturePool: number[];
 
+	private skillFlying: number;
+
+	private hairstyleCloud: number;
+
 	private messageFlewToTroposphere: number;
 	private messageFlewToTroposphereFailure: number;
 	private messageFlewToLand: number;
@@ -51,8 +65,7 @@ export default class Mod extends Mods.Mod {
 	private data: ITroposphereData;
 	private firstLoad: boolean;
 
-	public onInitialize(saveDataGlobal: any): any {
-	}
+	public onInitialize(saveDataGlobal: any): any { }
 
 	public onLoad(data: any): void {
 		this.data = data;
@@ -61,7 +74,7 @@ export default class Mod extends Mods.Mod {
 		if (this.firstLoad) {
 			this.data = {
 				seed: new Date().getTime(),
-				flying: false,
+				flying: false
 			};
 		}
 
@@ -69,6 +82,7 @@ export default class Mod extends Mods.Mod {
 		this.initializeDoodads();
 		this.initializeTerrain();
 		this.initializeCreatures();
+		this.initializeSkills();
 
 		this.messageFlewToTroposphere = this.addMessage("FlewToTroposphere", "You flew to the Troposphere.");
 		this.messageFlewToTroposphereFailure = this.addMessage("FlewToTroposphereFailure", "You are unable to fly to the Troposphere. Try flying from another spot.");
@@ -81,40 +95,44 @@ export default class Mod extends Mods.Mod {
 	}
 
 	public onUnload(): void {
-		this.getItemByType(ItemType.GlassBottle).use.pop();
+		const glassBottle = this.getItemByType(ItemType.GlassBottle);
+		if (glassBottle && glassBottle.use) {
+			glassBottle.use.pop();
+		}
 	}
 
 	public onSave(): any {
 		return this.data;
 	}
 
-	public onCreateWorld(world: World) {
-		world.addLayer(Mod.troposphereZ);
+	public onCreateWorld(world: IWorld) {
+		world.addLayer(Troposphere.troposphereZ);
 	}
 
 	public postGenerateWorld(generateNewWorld: boolean) {
 		// percentage
-		let doodadChance = 0.6;
-		let doodadChanceStorm = 0.2;
+		const doodadChance = 0.6;
+		const doodadChanceStorm = 0.2;
 
-		let terrainHoleChance = 0.02;
+		const terrainHoleChance = 0.02;
 
-		let creatureChance = 0.0025;
-		let creatureSpriteChance = 0.0001;
-		let creatureAberrantChance = 0.05;
-		let creatureAberrantStormChance = 0.50;
+		const creatureChance = 0.0025;
+		const creatureSpriteChance = 0.0001;
+		const creatureAberrantChance = 0.05;
+		const creatureAberrantStormChance = 0.50;
 
-		let tile: Terrain.ITile;
+		let tile: ITile;
 		let terrainType: number;
 
 		Utilities.Random.setSeed(this.data.seed);
 
 		for (let x = 0; x < game.mapSize; x++) {
 			for (let y = 0; y < game.mapSize; y++) {
-				tile = game.setTile(x, y, Mod.troposphereZ, game.getTile(x, y, Mod.troposphereZ) || <Terrain.ITile>{});
+				tile = game.setTile(x, y, Troposphere.troposphereZ, game.getTile(x, y, Troposphere.troposphereZ) || {} as ITile);
 
 				let tileGfx = 0;
-				let normalTerrainType = Terrain.defines[Utilities.TileHelpers.getType(game.getTile(x, y, Z_NORMAL))].terrainType;
+				const terrainDescription = Terrains[Utilities.TileHelpers.getType(game.getTile(x, y, WorldZ.Overworld))];
+				const normalTerrainType = terrainDescription ? terrainDescription.terrainType : TerrainType.Grass;
 
 				switch (normalTerrainType) {
 					case TerrainType.Rocks:
@@ -175,19 +193,19 @@ export default class Mod extends Mods.Mod {
 
 		for (let x = 0; x < game.mapSize; x++) {
 			for (let y = 0; y < game.mapSize; y++) {
-				terrainType = Utilities.TileHelpers.getType(game.getTile(x, y, Mod.troposphereZ));
+				terrainType = Utilities.TileHelpers.getType(game.getTile(x, y, Troposphere.troposphereZ));
 
 				if (generateNewWorld) {
 					switch (terrainType) {
 						case this.terrainCloud:
 						case this.terrainStorm:
-							let chance = Utilities.Random.nextFloat();
-							let aberrantChance = terrainType === this.terrainCloud ? creatureAberrantChance : creatureAberrantStormChance;
+							const chance = Utilities.Random.nextFloat();
+							const aberrantChance = terrainType === this.terrainCloud ? creatureAberrantChance : creatureAberrantStormChance;
 							if (chance <= creatureSpriteChance) {
-								Creature.spawn(this.creatureSprite, x, y, Mod.troposphereZ, true, Utilities.Random.nextFloat() <= aberrantChance);
+								creatureManager.spawn(this.creatureSprite, x, y, Troposphere.troposphereZ, true, Utilities.Random.nextFloat() <= aberrantChance);
 							} else if (chance <= creatureChance) {
-								let creatureType = this.creaturePool[Utilities.Random.nextInt(this.creaturePool.length)];
-								Creature.spawn(creatureType, x, y, Mod.troposphereZ, true, Utilities.Random.nextFloat() <= aberrantChance);
+								const creatureType = this.creaturePool[Utilities.Random.nextInt(this.creaturePool.length)];
+								creatureManager.spawn(creatureType, x, y, Troposphere.troposphereZ, true, Utilities.Random.nextFloat() <= aberrantChance);
 							}
 
 							break;
@@ -203,30 +221,29 @@ export default class Mod extends Mods.Mod {
 		}
 
 		if (this.falling) {
-			let turnProgress = 1 - Math.min(1, Math.max(0, (game.nextProcessInput - game.time) / (Delay.Collision * game.interval)));
+			const turnProgress = 1 - Math.min(1, Math.max(0, (localPlayer.movementFinishTime - game.absoluteTime) / (Delay.Movement * game.interval)));
 			tileScale = Utilities.Math2.easeInCubic(turnProgress, tileScale * 0.25, tileScale * 0.75, 1.0);
 			game.updateRender = true;
 		} else {
 			tileScale *= 0.25;
 		}
 
-		let scrollX = Utilities.Math2.lerp(player.fromX, player.x, game.turnProgress);
-		let scrollY = Utilities.Math2.lerp(player.fromY, player.y, game.turnProgress);
-		renderer.layers[Z_NORMAL].renderFullbright(scrollX, scrollY, tileScale, viewWidth, viewHeight);
-		renderer.layers[Z_NORMAL].postRenderFullbright(scrollX, scrollY, tileScale, viewWidth, viewHeight);
+		const scrollX = Utilities.Math2.lerp(localPlayer.fromX, localPlayer.x, localPlayer.movementProgress);
+		const scrollY = Utilities.Math2.lerp(localPlayer.fromY, localPlayer.y, localPlayer.movementProgress);
+
+		renderer.layers[WorldZ.Overworld].renderFullbright(scrollX, scrollY, tileScale, viewWidth, viewHeight);
 	}
 
 	public shouldRender() {
-		if (!this.falling) {
-			return undefined;
+		if (this.falling) {
+			return RenderFlag.Player;
 		}
-		return RenderFlag.Player;
 	}
 
 	public onGameStart(isLoadingSave: boolean): void {
 		if (!isLoadingSave || this.firstLoad) {
 			// give nimbus
-			Item.create(this.itemNimbus);
+			localPlayer.createItemInInventory(this.itemNimbus);
 		}
 	}
 
@@ -250,35 +267,41 @@ export default class Mod extends Mods.Mod {
 			this.setFlying(false, false);
 
 			// fall damage
-			ui.displayMessage(this.messageFellToLand, MessageType.Bad);
+			ui.displayMessage(localPlayer, this.messageFellToLand, MessageType.Bad);
 
-			let tile = game.getTile(player.x, player.y, player.z);
-			let terrainType = Utilities.TileHelpers.getType(tile);
-			if (TileAtlas.isWater(terrainType)) {
-				player.damage(-30, messages[this.messageDeathByFalling]);
+			const flyingSkill = localPlayer.skills[this.skillFlying];
+			const damagePercentage = flyingSkill ? 1 - (flyingSkill.percent / 100) : 1;
+
+			const tile = game.getTile(localPlayer.x, localPlayer.y, localPlayer.z);
+			const terrainType = Utilities.TileHelpers.getType(tile);
+			if (tileAtlas.isWater(terrainType)) {
+				localPlayer.damage(-30 * damagePercentage, messages[this.messageDeathByFalling]);
 			} else {
-				player.damage(-40, messages[this.messageDeathByFalling]);
-				Corpse.create({ type: CreatureType.Blood, x: player.x, y: player.y, z: player.z });
+				localPlayer.damage(-40 * damagePercentage, messages[this.messageDeathByFalling]);
+				corpseManager.create({ type: CreatureType.Blood, x: localPlayer.x, y: localPlayer.y, z: localPlayer.z });
 			}
 
-			game.passTurn();
+			game.passTurn(localPlayer);
 
 		} else {
-			let tile = game.getTile(player.x, player.y, player.z);
-			let terrainType = Utilities.TileHelpers.getType(tile);
+			const tile = game.getTile(localPlayer.x, localPlayer.y, localPlayer.z);
+			const terrainType = Utilities.TileHelpers.getType(tile);
 
 			if (terrainType === this.terrainHole) {
 				this.falling = true;
-				game.addDelay(Delay.Collision, true);
-				game.passTurn();
-				game.fov.compute(false); // no light blocking
+
+				localPlayer.addDelay(Delay.Collision, true);
+				game.passTurn(localPlayer);
+
+				// no light blocking
+				fieldOfView.compute(false);
 			}
 		}
 	}
 
 	public initializeItems() {
-		let actionTypeFly = this.addActionType("Fly", "Fly to/from the Troposphere.", (item: Item.IItem) => this.onNimbus(item));
-		let actionTypeGatherRainbow = this.addActionType("Gather Rainbow", "Gather a Rainbow.", (item: Item.IItem) => this.onGatherRainbow(item));
+		const actionTypeFly = this.addActionType("Fly", "Fly to/from the Troposphere.", (player: IPlayer, argument: IActionArgument, result: IActionResult) => this.onNimbus(argument.item));
+		const actionTypeGatherRainbow = this.addActionType("Gather Rainbow", "Gather a Rainbow.", (player: IPlayer, argument: IActionArgument, result: IActionResult) => this.onGatherRainbow(argument.item));
 
 		this.itemNimbus = this.addItem({
 			description: "A Flying Nimbus.",
@@ -319,7 +342,10 @@ export default class Mod extends Mods.Mod {
 			weight: 1
 		});
 
-		this.getItemByType(ItemType.GlassBottle).use.push(actionTypeGatherRainbow);
+		const glassBottle = this.getItemByType(ItemType.GlassBottle);
+		if (glassBottle && glassBottle.use) {
+			glassBottle.use.push(actionTypeGatherRainbow);
+		}
 	}
 
 	public initializeDoodads() {
@@ -463,12 +489,12 @@ export default class Mod extends Mods.Mod {
 				new Vulnerabilities()
 			),
 			damageType: DamageType.Slashing | DamageType.Blunt,
-			ai: Creature.AiType.Hostile,
+			ai: AiType.Hostile,
 			moveType: MoveType.Land | MoveType.ShallowWater | MoveType.Water | MoveType.BreakWalls,
 			canCauseStatus: [StatusType.Bleeding],
-			spawnTiles: Creature.SpawnableTiles.None,
-			spawnMalignity: 16000,
-			malignity: -300,
+			spawnTiles: SpawnableTiles.None,
+			spawnReputation: 16000,
+			reputation: -300,
 			makeNoise: true,
 			loot: [{
 				item: this.itemRainbow,
@@ -488,10 +514,10 @@ export default class Mod extends Mods.Mod {
 				new Vulnerabilities()
 			),
 			damageType: DamageType.Slashing,
-			ai: Creature.AiType.Scared,
+			ai: AiType.Scared,
 			moveType: MoveType.Land | MoveType.ShallowWater,
-			spawnTiles: Creature.SpawnableTiles.None,
-			malignity: 200,
+			spawnTiles: SpawnableTiles.None,
+			reputation: 200,
 			makeNoise: true,
 			jumpOver: true
 		});
@@ -511,10 +537,10 @@ export default class Mod extends Mods.Mod {
 				)
 			),
 			damageType: DamageType.Piercing,
-			ai: Creature.AiType.Neutral,
+			ai: AiType.Neutral,
 			moveType: MoveType.Flying,
-			malignity: -100,
-			spawnTiles: Creature.SpawnableTiles.None,
+			reputation: -100,
+			spawnTiles: SpawnableTiles.None,
 			loot: [{ item: ItemType.Feather }, { item: ItemType.Feather }],
 			lootGroup: LootGroupType.Low
 		});
@@ -532,15 +558,15 @@ export default class Mod extends Mods.Mod {
 				new Vulnerabilities()
 			),
 			damageType: DamageType.Fire | DamageType.Blunt,
-			ai: Creature.AiType.Hostile,
+			ai: AiType.Hostile,
 			moveType: MoveType.Flying,
-			spawnTiles: Creature.SpawnableTiles.None,
+			spawnTiles: SpawnableTiles.None,
 			lootGroup: LootGroupType.High,
 			loot: [{ item: ItemType.PileOfAsh }],
 			blood: { r: 210, g: 125, b: 20 },
 			canCauseStatus: [StatusType.Bleeding],
-			spawnMalignity: 32000,
-			malignity: -300,
+			spawnReputation: 32000,
+			reputation: -300,
 			makeNoise: true
 		});
 
@@ -557,83 +583,94 @@ export default class Mod extends Mods.Mod {
 				new Vulnerabilities()
 			),
 			damageType: DamageType.Fire | DamageType.Blunt,
-			ai: Creature.AiType.Hostile,
+			ai: AiType.Hostile,
 			moveType: MoveType.Flying,
-			spawnTiles: Creature.SpawnableTiles.None,
+			spawnTiles: SpawnableTiles.None,
 			lootGroup: LootGroupType.High,
 			loot: [{ item: ItemType.PileOfAsh }],
 			blood: { r: 210, g: 125, b: 20 },
 			canCauseStatus: [StatusType.Bleeding],
-			spawnMalignity: 32000,
-			malignity: -500,
+			spawnReputation: 32000,
+			reputation: -500,
 			makeNoise: true
 		});
 
 		this.creaturePool = [this.creatureBear, this.creatureRabbit, this.creatureCloudling, this.creatureLightningElemental];
 	}
 
-	public onNimbus(item: Item.IItem): any {
+	public initializeSkills() {
+		this.skillFlying = this.addSkillType({
+			name: "Flying",
+			description: "Increases your damage resistance when falling from the Troposphere."
+		});
+	}
+
+	public onNimbus(item: IItem | undefined) {
 		this.setFlying(!this.data.flying, true);
 	}
 
-	public onGatherRainbow(item: Item.IItem): any {
-		let tile = game.getTileInFrontOfPlayer();
-		let tileType = Utilities.TileHelpers.getType(tile);
-		if (tileType === this.terrainRainbow) {
-			ui.displayMessage(this.messageGatheredRainbow);
-
-			game.particle.create(player.x + player.direction.x, player.y + player.direction.y, { r: 12, g: 128, b: 247 });
-
-			let newItem = Item.create(this.itemRainbowGlassBottle, item.quality);
-			newItem.decay = item.decay;
-			newItem.minDur = item.minDur;
-			newItem.maxDur = item.maxDur;
-
-			Item.remove(item);
-
-			game.changeTile({ type: this.terrainCloud }, player.x + player.direction.x, player.y + player.direction.y, player.z, false);
-			game.passTurn();
-		} else {
-			ui.displayMessage(this.messageNoRainbow);
+	public onGatherRainbow(item: IItem | undefined) {
+		const tile = game.getTileInFrontOfPlayer(localPlayer);
+		const tileType = Utilities.TileHelpers.getType(tile);
+		if (!item || tileType !== this.terrainRainbow) {
+			ui.displayMessage(localPlayer, this.messageNoRainbow);
+			return;
 		}
+
+		ui.displayMessage(localPlayer, this.messageGatheredRainbow);
+
+		game.particle.create(localPlayer.x + localPlayer.direction.x, localPlayer.y + localPlayer.direction.y, localPlayer.z, { r: 12, g: 128, b: 247 });
+
+		const newItem = itemManager.create(this.itemRainbowGlassBottle, localPlayer.inventory, item.quality);
+		newItem.decay = item.decay;
+		newItem.minDur = item.minDur;
+		newItem.maxDur = item.maxDur;
+
+		itemManager.remove(item);
+
+		game.changeTile({ type: this.terrainCloud }, localPlayer.x + localPlayer.direction.x, localPlayer.y + localPlayer.direction.y, localPlayer.z, false);
+		game.passTurn(localPlayer);
 	}
 
-	public canConsumeItem(itemType: ItemType, actionType: ActionType): boolean {
+	public canConsumeItem(itemType: ItemType, actionType: ActionType): boolean | undefined {
 		if (itemType === this.itemRainbowGlassBottle && actionType === ActionType.Drink) {
-			player.gender = player.gender === Gender.Male ? Gender.Female : Gender.Male;
+			localPlayer.customization = {
+				hairStyle: Utilities.Enums.getRandomIndex(Hairstyle),
+				hairColor: Utilities.Enums.getRandomIndex(HairColor),
+				skinColor: Utilities.Enums.getRandomIndex(SkinColor)
+			};
 			return true;
 		}
-		return undefined;
 	}
 
-	public onSpawnCreatureFromGroup(creatureGroup: Creature.SpawnGroup, creaturePool: CreatureType[], x: number, y: number, z: number): boolean {
-		if (z !== Mod.troposphereZ) {
-			return undefined;
+	public onSpawnCreatureFromGroup(creatureGroup: SpawnGroup, creaturePool: CreatureType[], x: number, y: number, z: number): boolean | undefined {
+		if (z !== Troposphere.troposphereZ) {
+			return;
 		}
 		creaturePool.push.apply(creaturePool, this.creaturePool);
 	}
 
-	public canCreatureMove(creatureId: number, creature: Creature.ICreature, tile?: Terrain.ITile): boolean {
+	public canCreatureMove(creatureId: number, creature: ICreature, tile?: ITile): boolean | undefined {
 		if (tile && Utilities.TileHelpers.getType(tile) === this.terrainHole) {
 			return creature.type !== this.creatureBear && creature.type !== this.creatureRabbit;
 		}
 	}
 
-	public canCreatureAttack(creatureId: number, creature: Creature.ICreature): boolean {
+	public canCreatureAttack(creatureId: number, creature: ICreature): boolean | undefined {
 		if (creature.type !== this.creatureSprite) {
 			return;
 		}
 
-		let creatureObj = <any>creature;
+		const creatureObj = creature as any;
 		creatureObj.justAttacked = true;
 	}
 
-	public canSeeCreature(creatureId: number, creature: Creature.ICreature, tile: Terrain.ITile): boolean {
+	public canSeeCreature(creatureId: number, creature: ICreature, tile: ITile): boolean | undefined {
 		if (creature.type !== this.creatureSprite) {
 			return;
 		}
 
-		let creatureObj = <any>creature;
+		const creatureObj = creature as any;
 
 		if (creatureObj.justAttacked) {
 			creatureObj.justAttacked = undefined;
@@ -641,7 +678,7 @@ export default class Mod extends Mods.Mod {
 		}
 
 		if (creatureObj.nextVisibleCount === undefined || creatureObj.nextVisibleCount === 0) {
-			creatureObj.nextVisibleCount = Utilities.Random.randomFromInterval(1, 6);
+			creatureObj.nextVisibleCount = Utilities.Random.nextIntInRange(1, 6);
 			return;
 		}
 
@@ -651,47 +688,48 @@ export default class Mod extends Mods.Mod {
 	}
 
 	public setFlying(flying: boolean, passTurn: boolean): boolean {
-		let z = !flying ? Z_NORMAL : Mod.troposphereZ;
+		const z = !flying ? WorldZ.Overworld : Troposphere.troposphereZ;
 
-		let openTile = this.findOpenTile(z);
-		if (openTile === null || player.z === Z_CAVE) {
+		const openTile = this.findOpenTile(z);
+		if (openTile === undefined || localPlayer.z === WorldZ.Cave) {
 			if (passTurn) {
-				ui.displayMessage(flying ? this.messageFlewToTroposphereFailure : this.messageFlewToLandFailure, MessageType.Bad);
+				ui.displayMessage(localPlayer, flying ? this.messageFlewToTroposphereFailure : this.messageFlewToLandFailure, MessageType.Bad);
 			}
 			return false;
 		}
 
 		this.data.flying = flying;
 
-		player.x = openTile.x;
-		player.y = openTile.y;
-		game.raft = null;
+		localPlayer.x = openTile.x;
+		localPlayer.y = openTile.y;
+		localPlayer.z = z;
 
-		game.setPlayerZ(z);
+		localPlayer.raft = undefined;
+
+		localPlayer.skillGain(this.skillFlying);
 
 		if (passTurn) {
-			ui.displayMessage(flying ? this.messageFlewToTroposphere : this.messageFlewToLand, MessageType.Good);
+			ui.displayMessage(localPlayer, flying ? this.messageFlewToTroposphere : this.messageFlewToLand, MessageType.Good);
 
-			game.passTurn();
+			game.passTurn(localPlayer);
 		}
 
 		return true;
 	}
 
-	public findOpenTile(z: number): IPoint {
-
-		let q: IPoint[] = [{ x: player.x, y: player.y }];
-		let visited: string[] = [];
+	public findOpenTile(z: number): IPoint | undefined {
+		const q: IPoint[] = [{ x: localPlayer.x, y: localPlayer.y }];
+		const visited: string[] = [];
 		let tilesChecked = 0;
 
-		let indexPoint = (point: IPoint) => {
+		const indexPoint = (point: IPoint) => {
 			return `${point.x},${point.y}`;
 		};
 
 		while (q.length > 0) {
-			let point = q.pop();
+			const point = q.pop() as IPoint;
 
-			let tile = game.getTile(point.x, point.y, z);
+			const tile = game.getTile(point.x, point.y, z);
 			if (!tile) {
 				continue;
 			}
@@ -702,7 +740,7 @@ export default class Mod extends Mods.Mod {
 
 			for (let i = 0; i < 4; i++) {
 
-				let neighbor: IPoint = { x: point.x, y: point.y };
+				const neighbor: IPoint = { x: point.x, y: point.y };
 
 				switch (i) {
 					case 0:
@@ -735,10 +773,10 @@ export default class Mod extends Mods.Mod {
 			// }
 		}
 
-		return null;
+		return undefined;
 	}
 
-	public isFlyableTile(tile: Terrain.ITile): boolean {
+	public isFlyableTile(tile: ITile): boolean {
 		if (tile.creatureId !== undefined && tile.creatureId !== null) {
 			return false;
 		}
@@ -747,13 +785,13 @@ export default class Mod extends Mods.Mod {
 			return false;
 		}
 
-		let terrainType = Utilities.TileHelpers.getType(tile);
+		const terrainType = Utilities.TileHelpers.getType(tile);
 		if (terrainType === this.terrainHole) {
 			return false;
 		}
 
-		let terrainInfo = Terrain.defines[terrainType];
+		const terrainInfo = Terrains[terrainType];
 
-		return !terrainInfo || (terrainInfo.water || terrainInfo.passable);
+		return (!terrainInfo || (terrainInfo.water || terrainInfo.passable)) ? true : false;
 	}
 }

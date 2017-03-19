@@ -1,5 +1,10 @@
-/// <reference path="mod-reference/modreference.d.ts" />
-export default class Mod extends Mods.Mod {
+import { ICreature, SpawnGroup } from "creature/ICreature";
+import { ActionType, CreatureType, IPoint, ItemType, RenderFlag } from "Enums";
+import { IItem } from "item/IItem";
+import Mod from "mod/Mod";
+import IWorld from "renderer/IWorld";
+import { ITile } from "tile/ITerrain";
+export default class Troposphere extends Mod {
     private static readonly troposphereZ;
     private moving;
     private falling;
@@ -27,6 +32,8 @@ export default class Mod extends Mods.Mod {
     private creatureLightningElemental;
     private creatureSprite;
     private creaturePool;
+    private skillFlying;
+    private hairstyleCloud;
     private messageFlewToTroposphere;
     private messageFlewToTroposphereFailure;
     private messageFlewToLand;
@@ -41,10 +48,10 @@ export default class Mod extends Mods.Mod {
     onLoad(data: any): void;
     onUnload(): void;
     onSave(): any;
-    onCreateWorld(world: World): void;
+    onCreateWorld(world: IWorld): void;
     postGenerateWorld(generateNewWorld: boolean): void;
     preRenderWorld(tileScale: number, viewWidth: number, viewHeight: number): void;
-    shouldRender(): RenderFlag;
+    shouldRender(): RenderFlag.Player | undefined;
     onGameStart(isLoadingSave: boolean): void;
     onTurnStart(): void;
     onTurnComplete(): void;
@@ -52,14 +59,15 @@ export default class Mod extends Mods.Mod {
     initializeDoodads(): void;
     initializeTerrain(): void;
     initializeCreatures(): void;
-    onNimbus(item: Item.IItem): any;
-    onGatherRainbow(item: Item.IItem): any;
-    canConsumeItem(itemType: ItemType, actionType: ActionType): boolean;
-    onSpawnCreatureFromGroup(creatureGroup: Creature.SpawnGroup, creaturePool: CreatureType[], x: number, y: number, z: number): boolean;
-    canCreatureMove(creatureId: number, creature: Creature.ICreature, tile?: Terrain.ITile): boolean;
-    canCreatureAttack(creatureId: number, creature: Creature.ICreature): boolean;
-    canSeeCreature(creatureId: number, creature: Creature.ICreature, tile: Terrain.ITile): boolean;
+    initializeSkills(): void;
+    onNimbus(item: IItem | undefined): void;
+    onGatherRainbow(item: IItem | undefined): void;
+    canConsumeItem(itemType: ItemType, actionType: ActionType): boolean | undefined;
+    onSpawnCreatureFromGroup(creatureGroup: SpawnGroup, creaturePool: CreatureType[], x: number, y: number, z: number): boolean | undefined;
+    canCreatureMove(creatureId: number, creature: ICreature, tile?: ITile): boolean | undefined;
+    canCreatureAttack(creatureId: number, creature: ICreature): boolean | undefined;
+    canSeeCreature(creatureId: number, creature: ICreature, tile: ITile): boolean | undefined;
     setFlying(flying: boolean, passTurn: boolean): boolean;
-    findOpenTile(z: number): IPoint;
-    isFlyableTile(tile: Terrain.ITile): boolean;
+    findOpenTile(z: number): IPoint | undefined;
+    isFlyableTile(tile: ITile): boolean;
 }

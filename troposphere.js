@@ -1,22 +1,23 @@
-define(["require", "exports"], function (require, exports) {
+define(["require", "exports", "creature/ICreature", "Enums", "language/Messages", "mod/Mod", "tile/Terrains", "Utilities"], function (require, exports, ICreature_1, Enums_1, Messages_1, Mod_1, Terrains_1, Utilities) {
     "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     ;
-    class Mod extends Mods.Mod {
-        onInitialize(saveDataGlobal) {
-        }
+    class Troposphere extends Mod_1.default {
+        onInitialize(saveDataGlobal) { }
         onLoad(data) {
             this.data = data;
             this.firstLoad = !this.data;
             if (this.firstLoad) {
                 this.data = {
                     seed: new Date().getTime(),
-                    flying: false,
+                    flying: false
                 };
             }
             this.initializeItems();
             this.initializeDoodads();
             this.initializeTerrain();
             this.initializeCreatures();
+            this.initializeSkills();
             this.messageFlewToTroposphere = this.addMessage("FlewToTroposphere", "You flew to the Troposphere.");
             this.messageFlewToTroposphereFailure = this.addMessage("FlewToTroposphereFailure", "You are unable to fly to the Troposphere. Try flying from another spot.");
             this.messageFlewToLand = this.addMessage("FlewToLand", "You flew back to land.");
@@ -27,43 +28,47 @@ define(["require", "exports"], function (require, exports) {
             this.messageNoRainbow = this.addMessage("NoRainbow", "You can only gather rainbows by standing infront of them.");
         }
         onUnload() {
-            this.getItemByType(ItemType.GlassBottle).use.pop();
+            const glassBottle = this.getItemByType(Enums_1.ItemType.GlassBottle);
+            if (glassBottle && glassBottle.use) {
+                glassBottle.use.pop();
+            }
         }
         onSave() {
             return this.data;
         }
         onCreateWorld(world) {
-            world.addLayer(Mod.troposphereZ);
+            world.addLayer(Troposphere.troposphereZ);
         }
         postGenerateWorld(generateNewWorld) {
-            let doodadChance = 0.6;
-            let doodadChanceStorm = 0.2;
-            let terrainHoleChance = 0.02;
-            let creatureChance = 0.0025;
-            let creatureSpriteChance = 0.0001;
-            let creatureAberrantChance = 0.05;
-            let creatureAberrantStormChance = 0.50;
+            const doodadChance = 0.6;
+            const doodadChanceStorm = 0.2;
+            const terrainHoleChance = 0.02;
+            const creatureChance = 0.0025;
+            const creatureSpriteChance = 0.0001;
+            const creatureAberrantChance = 0.05;
+            const creatureAberrantStormChance = 0.50;
             let tile;
             let terrainType;
             Utilities.Random.setSeed(this.data.seed);
             for (let x = 0; x < game.mapSize; x++) {
                 for (let y = 0; y < game.mapSize; y++) {
-                    tile = game.setTile(x, y, Mod.troposphereZ, game.getTile(x, y, Mod.troposphereZ) || {});
+                    tile = game.setTile(x, y, Troposphere.troposphereZ, game.getTile(x, y, Troposphere.troposphereZ) || {});
                     let tileGfx = 0;
-                    let normalTerrainType = Terrain.defines[Utilities.TileHelpers.getType(game.getTile(x, y, Z_NORMAL))].terrainType;
+                    const terrainDescription = Terrains_1.default[Utilities.TileHelpers.getType(game.getTile(x, y, Enums_1.WorldZ.Overworld))];
+                    const normalTerrainType = terrainDescription ? terrainDescription.terrainType : Enums_1.TerrainType.Grass;
                     switch (normalTerrainType) {
-                        case TerrainType.Rocks:
-                        case TerrainType.Sandstone:
+                        case Enums_1.TerrainType.Rocks:
+                        case Enums_1.TerrainType.Sandstone:
                             terrainType = this.terrainCloudstone;
                             break;
-                        case TerrainType.DeepSeawater:
-                        case TerrainType.DeepFreshWater:
+                        case Enums_1.TerrainType.DeepSeawater:
+                        case Enums_1.TerrainType.DeepFreshWater:
                             terrainType = this.terrainStormstone;
                             break;
-                        case TerrainType.Seawater:
-                        case TerrainType.FreshWater:
-                        case TerrainType.ShallowSeawater:
-                        case TerrainType.ShallowFreshWater:
+                        case Enums_1.TerrainType.Seawater:
+                        case Enums_1.TerrainType.FreshWater:
+                        case Enums_1.TerrainType.ShallowSeawater:
+                        case Enums_1.TerrainType.ShallowFreshWater:
                             if (Utilities.Random.nextFloat() <= doodadChanceStorm) {
                                 terrainType = this.terrainStormBoulder;
                             }
@@ -71,14 +76,14 @@ define(["require", "exports"], function (require, exports) {
                                 terrainType = this.terrainStorm;
                             }
                             break;
-                        case TerrainType.Tree:
-                        case TerrainType.BareTree:
-                        case TerrainType.BarePalmTree:
-                        case TerrainType.TreeWithVines:
-                        case TerrainType.TreeWithBerries:
-                        case TerrainType.TreeWithFungus:
-                        case TerrainType.PalmTree:
-                        case TerrainType.PalmTreeWithCoconuts:
+                        case Enums_1.TerrainType.Tree:
+                        case Enums_1.TerrainType.BareTree:
+                        case Enums_1.TerrainType.BarePalmTree:
+                        case Enums_1.TerrainType.TreeWithVines:
+                        case Enums_1.TerrainType.TreeWithBerries:
+                        case Enums_1.TerrainType.TreeWithFungus:
+                        case Enums_1.TerrainType.PalmTree:
+                        case Enums_1.TerrainType.PalmTreeWithCoconuts:
                             if (Utilities.Random.nextFloat() <= doodadChance) {
                                 terrainType = this.terrainCloudBoulder;
                             }
@@ -104,19 +109,19 @@ define(["require", "exports"], function (require, exports) {
             }
             for (let x = 0; x < game.mapSize; x++) {
                 for (let y = 0; y < game.mapSize; y++) {
-                    terrainType = Utilities.TileHelpers.getType(game.getTile(x, y, Mod.troposphereZ));
+                    terrainType = Utilities.TileHelpers.getType(game.getTile(x, y, Troposphere.troposphereZ));
                     if (generateNewWorld) {
                         switch (terrainType) {
                             case this.terrainCloud:
                             case this.terrainStorm:
-                                let chance = Utilities.Random.nextFloat();
-                                let aberrantChance = terrainType === this.terrainCloud ? creatureAberrantChance : creatureAberrantStormChance;
+                                const chance = Utilities.Random.nextFloat();
+                                const aberrantChance = terrainType === this.terrainCloud ? creatureAberrantChance : creatureAberrantStormChance;
                                 if (chance <= creatureSpriteChance) {
-                                    Creature.spawn(this.creatureSprite, x, y, Mod.troposphereZ, true, Utilities.Random.nextFloat() <= aberrantChance);
+                                    creatureManager.spawn(this.creatureSprite, x, y, Troposphere.troposphereZ, true, Utilities.Random.nextFloat() <= aberrantChance);
                                 }
                                 else if (chance <= creatureChance) {
-                                    let creatureType = this.creaturePool[Utilities.Random.nextInt(this.creaturePool.length)];
-                                    Creature.spawn(creatureType, x, y, Mod.troposphereZ, true, Utilities.Random.nextFloat() <= aberrantChance);
+                                    const creatureType = this.creaturePool[Utilities.Random.nextInt(this.creaturePool.length)];
+                                    creatureManager.spawn(creatureType, x, y, Troposphere.troposphereZ, true, Utilities.Random.nextFloat() <= aberrantChance);
                                 }
                                 break;
                         }
@@ -129,27 +134,25 @@ define(["require", "exports"], function (require, exports) {
                 return;
             }
             if (this.falling) {
-                let turnProgress = 1 - Math.min(1, Math.max(0, (game.nextProcessInput - game.time) / (Delay.Collision * game.interval)));
+                const turnProgress = 1 - Math.min(1, Math.max(0, (localPlayer.movementFinishTime - game.absoluteTime) / (Enums_1.Delay.Movement * game.interval)));
                 tileScale = Utilities.Math2.easeInCubic(turnProgress, tileScale * 0.25, tileScale * 0.75, 1.0);
                 game.updateRender = true;
             }
             else {
                 tileScale *= 0.25;
             }
-            let scrollX = Utilities.Math2.lerp(player.fromX, player.x, game.turnProgress);
-            let scrollY = Utilities.Math2.lerp(player.fromY, player.y, game.turnProgress);
-            renderer.layers[Z_NORMAL].renderFullbright(scrollX, scrollY, tileScale, viewWidth, viewHeight);
-            renderer.layers[Z_NORMAL].postRenderFullbright(scrollX, scrollY, tileScale, viewWidth, viewHeight);
+            const scrollX = Utilities.Math2.lerp(localPlayer.fromX, localPlayer.x, localPlayer.movementProgress);
+            const scrollY = Utilities.Math2.lerp(localPlayer.fromY, localPlayer.y, localPlayer.movementProgress);
+            renderer.layers[Enums_1.WorldZ.Overworld].renderFullbright(scrollX, scrollY, tileScale, viewWidth, viewHeight);
         }
         shouldRender() {
-            if (!this.falling) {
-                return undefined;
+            if (this.falling) {
+                return Enums_1.RenderFlag.Player;
             }
-            return RenderFlag.Player;
         }
         onGameStart(isLoadingSave) {
             if (!isLoadingSave || this.firstLoad) {
-                Item.create(this.itemNimbus);
+                localPlayer.createItemInInventory(this.itemNimbus);
             }
         }
         onTurnStart() {
@@ -166,32 +169,34 @@ define(["require", "exports"], function (require, exports) {
             if (this.falling) {
                 this.falling = false;
                 this.setFlying(false, false);
-                ui.displayMessage(this.messageFellToLand, MessageType.Bad);
-                let tile = game.getTile(player.x, player.y, player.z);
-                let terrainType = Utilities.TileHelpers.getType(tile);
-                if (TileAtlas.isWater(terrainType)) {
-                    player.damage(-30, messages[this.messageDeathByFalling]);
+                ui.displayMessage(localPlayer, this.messageFellToLand, Messages_1.MessageType.Bad);
+                const flyingSkill = localPlayer.skills[this.skillFlying];
+                const damagePercentage = flyingSkill ? 1 - (flyingSkill.percent / 100) : 1;
+                const tile = game.getTile(localPlayer.x, localPlayer.y, localPlayer.z);
+                const terrainType = Utilities.TileHelpers.getType(tile);
+                if (tileAtlas.isWater(terrainType)) {
+                    localPlayer.damage(-30 * damagePercentage, Messages_1.messages[this.messageDeathByFalling]);
                 }
                 else {
-                    player.damage(-40, messages[this.messageDeathByFalling]);
-                    Corpse.create({ type: CreatureType.Blood, x: player.x, y: player.y, z: player.z });
+                    localPlayer.damage(-40 * damagePercentage, Messages_1.messages[this.messageDeathByFalling]);
+                    corpseManager.create({ type: Enums_1.CreatureType.Blood, x: localPlayer.x, y: localPlayer.y, z: localPlayer.z });
                 }
-                game.passTurn();
+                game.passTurn(localPlayer);
             }
             else {
-                let tile = game.getTile(player.x, player.y, player.z);
-                let terrainType = Utilities.TileHelpers.getType(tile);
+                const tile = game.getTile(localPlayer.x, localPlayer.y, localPlayer.z);
+                const terrainType = Utilities.TileHelpers.getType(tile);
                 if (terrainType === this.terrainHole) {
                     this.falling = true;
-                    game.addDelay(Delay.Collision, true);
-                    game.passTurn();
-                    game.fov.compute(false);
+                    localPlayer.addDelay(Enums_1.Delay.Collision, true);
+                    game.passTurn(localPlayer);
+                    fieldOfView.compute(false);
                 }
             }
         }
         initializeItems() {
-            let actionTypeFly = this.addActionType("Fly", "Fly to/from the Troposphere.", (item) => this.onNimbus(item));
-            let actionTypeGatherRainbow = this.addActionType("Gather Rainbow", "Gather a Rainbow.", (item) => this.onGatherRainbow(item));
+            const actionTypeFly = this.addActionType("Fly", "Fly to/from the Troposphere.", (player, argument, result) => this.onNimbus(argument.item));
+            const actionTypeGatherRainbow = this.addActionType("Gather Rainbow", "Gather a Rainbow.", (player, argument, result) => this.onGatherRainbow(argument.item));
             this.itemNimbus = this.addItem({
                 description: "A Flying Nimbus.",
                 name: "Nimbus",
@@ -212,8 +217,8 @@ define(["require", "exports"], function (require, exports) {
                 description: "A Magical Rainbow in a Glass Bottle.",
                 name: "Rainbow Glass Bottle",
                 weight: 1.0,
-                use: [ActionType.Drink],
-                returnOnUse: [ItemType.GlassBottle, false]
+                use: [Enums_1.ActionType.Drink],
+                returnOnUse: [Enums_1.ItemType.GlassBottle, false]
             });
             this.itemSnowflakes = this.addItem({
                 description: "A couple Snowflakes.",
@@ -225,7 +230,10 @@ define(["require", "exports"], function (require, exports) {
                 name: "Cloudstone",
                 weight: 1
             });
-            this.getItemByType(ItemType.GlassBottle).use.push(actionTypeGatherRainbow);
+            const glassBottle = this.getItemByType(Enums_1.ItemType.GlassBottle);
+            if (glassBottle && glassBottle.use) {
+                glassBottle.use.push(actionTypeGatherRainbow);
+            }
         }
         initializeDoodads() {
             this.doodadCloudBoulder = this.addDoodad({
@@ -270,10 +278,10 @@ define(["require", "exports"], function (require, exports) {
                 name: "Cloud Boulder",
                 particles: { r: 250, g: 250, b: 250 },
                 strength: 1,
-                skill: SkillType.Lumberjacking,
+                skill: Enums_1.SkillType.Lumberjacking,
                 gather: true,
                 noLos: true,
-                sound: SfxType.TreeHit,
+                sound: Enums_1.SfxType.TreeHit,
                 leftOver: this.terrainCloudWater,
                 noGfxSwitch: true,
                 noBackground: true,
@@ -283,10 +291,10 @@ define(["require", "exports"], function (require, exports) {
                 name: "Cloudstone",
                 particles: { r: 250, g: 250, b: 250 },
                 strength: 8,
-                skill: SkillType.Mining,
+                skill: Enums_1.SkillType.Mining,
                 gather: true,
                 noLos: true,
-                sound: SfxType.RockHit,
+                sound: Enums_1.SfxType.RockHit,
                 leftOver: this.terrainCloud,
                 noGfxSwitch: true,
                 isMountain: true,
@@ -306,10 +314,10 @@ define(["require", "exports"], function (require, exports) {
                 name: "Storm Boulder",
                 particles: { r: 20, g: 20, b: 20 },
                 strength: 2,
-                skill: SkillType.Lumberjacking,
+                skill: Enums_1.SkillType.Lumberjacking,
                 gather: true,
                 noLos: true,
-                sound: SfxType.TreeHit,
+                sound: Enums_1.SfxType.TreeHit,
                 leftOver: this.terrainCloudWater,
                 noGfxSwitch: true,
                 noBackground: true,
@@ -319,10 +327,10 @@ define(["require", "exports"], function (require, exports) {
                 name: "Stormstone",
                 particles: { r: 20, g: 20, b: 20 },
                 strength: 12,
-                skill: SkillType.Mining,
+                skill: Enums_1.SkillType.Mining,
                 gather: true,
                 noLos: true,
-                sound: SfxType.RockHit,
+                sound: Enums_1.SfxType.RockHit,
                 leftOver: this.terrainStorm,
                 noGfxSwitch: true,
                 isMountain: true,
@@ -346,14 +354,14 @@ define(["require", "exports"], function (require, exports) {
                 maxhp: 21,
                 minatk: 5,
                 maxatk: 13,
-                defense: new Defense(3, new Resistances(DamageType.Piercing, 3, DamageType.Blunt, 1), new Vulnerabilities()),
-                damageType: DamageType.Slashing | DamageType.Blunt,
-                ai: Creature.AiType.Hostile,
-                moveType: MoveType.Land | MoveType.ShallowWater | MoveType.Water | MoveType.BreakWalls,
-                canCauseStatus: [StatusType.Bleeding],
-                spawnTiles: Creature.SpawnableTiles.None,
-                spawnMalignity: 16000,
-                malignity: -300,
+                defense: new Enums_1.Defense(3, new Enums_1.Resistances(Enums_1.DamageType.Piercing, 3, Enums_1.DamageType.Blunt, 1), new Enums_1.Vulnerabilities()),
+                damageType: Enums_1.DamageType.Slashing | Enums_1.DamageType.Blunt,
+                ai: ICreature_1.AiType.Hostile,
+                moveType: Enums_1.MoveType.Land | Enums_1.MoveType.ShallowWater | Enums_1.MoveType.Water | Enums_1.MoveType.BreakWalls,
+                canCauseStatus: [Enums_1.StatusType.Bleeding],
+                spawnTiles: ICreature_1.SpawnableTiles.None,
+                spawnReputation: 16000,
+                reputation: -300,
                 makeNoise: true,
                 loot: [{
                         item: this.itemRainbow,
@@ -367,12 +375,12 @@ define(["require", "exports"], function (require, exports) {
                 maxhp: 6,
                 minatk: 1,
                 maxatk: 2,
-                defense: new Defense(0, new Resistances(), new Vulnerabilities()),
-                damageType: DamageType.Slashing,
-                ai: Creature.AiType.Scared,
-                moveType: MoveType.Land | MoveType.ShallowWater,
-                spawnTiles: Creature.SpawnableTiles.None,
-                malignity: 200,
+                defense: new Enums_1.Defense(0, new Enums_1.Resistances(), new Enums_1.Vulnerabilities()),
+                damageType: Enums_1.DamageType.Slashing,
+                ai: ICreature_1.AiType.Scared,
+                moveType: Enums_1.MoveType.Land | Enums_1.MoveType.ShallowWater,
+                spawnTiles: ICreature_1.SpawnableTiles.None,
+                reputation: 200,
                 makeNoise: true,
                 jumpOver: true
             });
@@ -382,14 +390,14 @@ define(["require", "exports"], function (require, exports) {
                 maxhp: 9,
                 minatk: 2,
                 maxatk: 3,
-                defense: new Defense(0, new Resistances(DamageType.Piercing, 1), new Vulnerabilities(DamageType.Blunt, 1)),
-                damageType: DamageType.Piercing,
-                ai: Creature.AiType.Neutral,
-                moveType: MoveType.Flying,
-                malignity: -100,
-                spawnTiles: Creature.SpawnableTiles.None,
-                loot: [{ item: ItemType.Feather }, { item: ItemType.Feather }],
-                lootGroup: LootGroupType.Low
+                defense: new Enums_1.Defense(0, new Enums_1.Resistances(Enums_1.DamageType.Piercing, 1), new Enums_1.Vulnerabilities(Enums_1.DamageType.Blunt, 1)),
+                damageType: Enums_1.DamageType.Piercing,
+                ai: ICreature_1.AiType.Neutral,
+                moveType: Enums_1.MoveType.Flying,
+                reputation: -100,
+                spawnTiles: ICreature_1.SpawnableTiles.None,
+                loot: [{ item: Enums_1.ItemType.Feather }, { item: Enums_1.ItemType.Feather }],
+                lootGroup: Enums_1.LootGroupType.Low
             });
             this.creatureLightningElemental = this.addCreature({
                 name: "Lightning Elemental",
@@ -397,17 +405,17 @@ define(["require", "exports"], function (require, exports) {
                 maxhp: 38,
                 minatk: 11,
                 maxatk: 19,
-                defense: new Defense(5, new Resistances(DamageType.Fire, 100), new Vulnerabilities()),
-                damageType: DamageType.Fire | DamageType.Blunt,
-                ai: Creature.AiType.Hostile,
-                moveType: MoveType.Flying,
-                spawnTiles: Creature.SpawnableTiles.None,
-                lootGroup: LootGroupType.High,
-                loot: [{ item: ItemType.PileOfAsh }],
+                defense: new Enums_1.Defense(5, new Enums_1.Resistances(Enums_1.DamageType.Fire, 100), new Enums_1.Vulnerabilities()),
+                damageType: Enums_1.DamageType.Fire | Enums_1.DamageType.Blunt,
+                ai: ICreature_1.AiType.Hostile,
+                moveType: Enums_1.MoveType.Flying,
+                spawnTiles: ICreature_1.SpawnableTiles.None,
+                lootGroup: Enums_1.LootGroupType.High,
+                loot: [{ item: Enums_1.ItemType.PileOfAsh }],
                 blood: { r: 210, g: 125, b: 20 },
-                canCauseStatus: [StatusType.Bleeding],
-                spawnMalignity: 32000,
-                malignity: -300,
+                canCauseStatus: [Enums_1.StatusType.Bleeding],
+                spawnReputation: 32000,
+                reputation: -300,
                 makeNoise: true
             });
             this.creatureSprite = this.addCreature({
@@ -416,52 +424,60 @@ define(["require", "exports"], function (require, exports) {
                 maxhp: 38,
                 minatk: 11,
                 maxatk: 19,
-                defense: new Defense(5, new Resistances(DamageType.Fire, 100), new Vulnerabilities()),
-                damageType: DamageType.Fire | DamageType.Blunt,
-                ai: Creature.AiType.Hostile,
-                moveType: MoveType.Flying,
-                spawnTiles: Creature.SpawnableTiles.None,
-                lootGroup: LootGroupType.High,
-                loot: [{ item: ItemType.PileOfAsh }],
+                defense: new Enums_1.Defense(5, new Enums_1.Resistances(Enums_1.DamageType.Fire, 100), new Enums_1.Vulnerabilities()),
+                damageType: Enums_1.DamageType.Fire | Enums_1.DamageType.Blunt,
+                ai: ICreature_1.AiType.Hostile,
+                moveType: Enums_1.MoveType.Flying,
+                spawnTiles: ICreature_1.SpawnableTiles.None,
+                lootGroup: Enums_1.LootGroupType.High,
+                loot: [{ item: Enums_1.ItemType.PileOfAsh }],
                 blood: { r: 210, g: 125, b: 20 },
-                canCauseStatus: [StatusType.Bleeding],
-                spawnMalignity: 32000,
-                malignity: -500,
+                canCauseStatus: [Enums_1.StatusType.Bleeding],
+                spawnReputation: 32000,
+                reputation: -500,
                 makeNoise: true
             });
             this.creaturePool = [this.creatureBear, this.creatureRabbit, this.creatureCloudling, this.creatureLightningElemental];
+        }
+        initializeSkills() {
+            this.skillFlying = this.addSkillType({
+                name: "Flying",
+                description: "Increases your damage resistance when falling from the Troposphere."
+            });
         }
         onNimbus(item) {
             this.setFlying(!this.data.flying, true);
         }
         onGatherRainbow(item) {
-            let tile = game.getTileInFrontOfPlayer();
-            let tileType = Utilities.TileHelpers.getType(tile);
-            if (tileType === this.terrainRainbow) {
-                ui.displayMessage(this.messageGatheredRainbow);
-                game.particle.create(player.x + player.direction.x, player.y + player.direction.y, { r: 12, g: 128, b: 247 });
-                let newItem = Item.create(this.itemRainbowGlassBottle, item.quality);
-                newItem.decay = item.decay;
-                newItem.minDur = item.minDur;
-                newItem.maxDur = item.maxDur;
-                Item.remove(item);
-                game.changeTile({ type: this.terrainCloud }, player.x + player.direction.x, player.y + player.direction.y, player.z, false);
-                game.passTurn();
+            const tile = game.getTileInFrontOfPlayer(localPlayer);
+            const tileType = Utilities.TileHelpers.getType(tile);
+            if (!item || tileType !== this.terrainRainbow) {
+                ui.displayMessage(localPlayer, this.messageNoRainbow);
+                return;
             }
-            else {
-                ui.displayMessage(this.messageNoRainbow);
-            }
+            ui.displayMessage(localPlayer, this.messageGatheredRainbow);
+            game.particle.create(localPlayer.x + localPlayer.direction.x, localPlayer.y + localPlayer.direction.y, localPlayer.z, { r: 12, g: 128, b: 247 });
+            const newItem = itemManager.create(this.itemRainbowGlassBottle, localPlayer.inventory, item.quality);
+            newItem.decay = item.decay;
+            newItem.minDur = item.minDur;
+            newItem.maxDur = item.maxDur;
+            itemManager.remove(item);
+            game.changeTile({ type: this.terrainCloud }, localPlayer.x + localPlayer.direction.x, localPlayer.y + localPlayer.direction.y, localPlayer.z, false);
+            game.passTurn(localPlayer);
         }
         canConsumeItem(itemType, actionType) {
-            if (itemType === this.itemRainbowGlassBottle && actionType === ActionType.Drink) {
-                player.gender = player.gender === Gender.Male ? Gender.Female : Gender.Male;
+            if (itemType === this.itemRainbowGlassBottle && actionType === Enums_1.ActionType.Drink) {
+                localPlayer.customization = {
+                    hairStyle: Utilities.Enums.getRandomIndex(Enums_1.Hairstyle),
+                    hairColor: Utilities.Enums.getRandomIndex(Enums_1.HairColor),
+                    skinColor: Utilities.Enums.getRandomIndex(Enums_1.SkinColor)
+                };
                 return true;
             }
-            return undefined;
         }
         onSpawnCreatureFromGroup(creatureGroup, creaturePool, x, y, z) {
-            if (z !== Mod.troposphereZ) {
-                return undefined;
+            if (z !== Troposphere.troposphereZ) {
+                return;
             }
             creaturePool.push.apply(creaturePool, this.creaturePool);
         }
@@ -474,55 +490,56 @@ define(["require", "exports"], function (require, exports) {
             if (creature.type !== this.creatureSprite) {
                 return;
             }
-            let creatureObj = creature;
+            const creatureObj = creature;
             creatureObj.justAttacked = true;
         }
         canSeeCreature(creatureId, creature, tile) {
             if (creature.type !== this.creatureSprite) {
                 return;
             }
-            let creatureObj = creature;
+            const creatureObj = creature;
             if (creatureObj.justAttacked) {
                 creatureObj.justAttacked = undefined;
                 return;
             }
             if (creatureObj.nextVisibleCount === undefined || creatureObj.nextVisibleCount === 0) {
-                creatureObj.nextVisibleCount = Utilities.Random.randomFromInterval(1, 6);
+                creatureObj.nextVisibleCount = Utilities.Random.nextIntInRange(1, 6);
                 return;
             }
             creatureObj.nextVisibleCount--;
             return false;
         }
         setFlying(flying, passTurn) {
-            let z = !flying ? Z_NORMAL : Mod.troposphereZ;
-            let openTile = this.findOpenTile(z);
-            if (openTile === null || player.z === Z_CAVE) {
+            const z = !flying ? Enums_1.WorldZ.Overworld : Troposphere.troposphereZ;
+            const openTile = this.findOpenTile(z);
+            if (openTile === undefined || localPlayer.z === Enums_1.WorldZ.Cave) {
                 if (passTurn) {
-                    ui.displayMessage(flying ? this.messageFlewToTroposphereFailure : this.messageFlewToLandFailure, MessageType.Bad);
+                    ui.displayMessage(localPlayer, flying ? this.messageFlewToTroposphereFailure : this.messageFlewToLandFailure, Messages_1.MessageType.Bad);
                 }
                 return false;
             }
             this.data.flying = flying;
-            player.x = openTile.x;
-            player.y = openTile.y;
-            game.raft = null;
-            game.setPlayerZ(z);
+            localPlayer.x = openTile.x;
+            localPlayer.y = openTile.y;
+            localPlayer.z = z;
+            localPlayer.raft = undefined;
+            localPlayer.skillGain(this.skillFlying);
             if (passTurn) {
-                ui.displayMessage(flying ? this.messageFlewToTroposphere : this.messageFlewToLand, MessageType.Good);
-                game.passTurn();
+                ui.displayMessage(localPlayer, flying ? this.messageFlewToTroposphere : this.messageFlewToLand, Messages_1.MessageType.Good);
+                game.passTurn(localPlayer);
             }
             return true;
         }
         findOpenTile(z) {
-            let q = [{ x: player.x, y: player.y }];
-            let visited = [];
+            const q = [{ x: localPlayer.x, y: localPlayer.y }];
+            const visited = [];
             let tilesChecked = 0;
-            let indexPoint = (point) => {
+            const indexPoint = (point) => {
                 return `${point.x},${point.y}`;
             };
             while (q.length > 0) {
-                let point = q.pop();
-                let tile = game.getTile(point.x, point.y, z);
+                const point = q.pop();
+                const tile = game.getTile(point.x, point.y, z);
                 if (!tile) {
                     continue;
                 }
@@ -530,7 +547,7 @@ define(["require", "exports"], function (require, exports) {
                     return point;
                 }
                 for (let i = 0; i < 4; i++) {
-                    let neighbor = { x: point.x, y: point.y };
+                    const neighbor = { x: point.x, y: point.y };
                     switch (i) {
                         case 0:
                             neighbor.x++;
@@ -553,7 +570,7 @@ define(["require", "exports"], function (require, exports) {
                 }
                 tilesChecked++;
             }
-            return null;
+            return undefined;
         }
         isFlyableTile(tile) {
             if (tile.creatureId !== undefined && tile.creatureId !== null) {
@@ -562,16 +579,15 @@ define(["require", "exports"], function (require, exports) {
             if (tile.doodadId !== undefined && tile.doodadId !== null) {
                 return false;
             }
-            let terrainType = Utilities.TileHelpers.getType(tile);
+            const terrainType = Utilities.TileHelpers.getType(tile);
             if (terrainType === this.terrainHole) {
                 return false;
             }
-            let terrainInfo = Terrain.defines[terrainType];
-            return !terrainInfo || (terrainInfo.water || terrainInfo.passable);
+            const terrainInfo = Terrains_1.default[terrainType];
+            return (!terrainInfo || (terrainInfo.water || terrainInfo.passable)) ? true : false;
         }
     }
-    Mod.troposphereZ = Z_MAX + 1;
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.default = Mod;
+    Troposphere.troposphereZ = Enums_1.WorldZ.Max + 1;
+    exports.default = Troposphere;
 });
-//# sourceMappingURL=troposphere.js.map
+//# sourceMappingURL=Troposphere.js.map
