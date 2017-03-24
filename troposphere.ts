@@ -300,8 +300,15 @@ export default class Troposphere extends Mod {
 	}
 
 	public initializeItems() {
-		const actionTypeFly = this.addActionType("Fly", "Fly to/from the Troposphere.", (player: IPlayer, argument: IActionArgument, result: IActionResult) => this.onNimbus(argument.item));
-		const actionTypeGatherRainbow = this.addActionType("Gather Rainbow", "Gather a Rainbow.", (player: IPlayer, argument: IActionArgument, result: IActionResult) => this.onGatherRainbow(argument.item));
+		const actionTypeFly = this.addActionType({
+			name: "Fly",
+			description: "Fly to/from the Troposphere."
+		}, (player: IPlayer, argument: IActionArgument, result: IActionResult) => this.onNimbus(argument.item));
+
+		const actionTypeGatherRainbow = this.addActionType({
+			name: "Gather Rainbow",
+			description: "Gather a Rainbow."
+		}, (player: IPlayer, argument: IActionArgument, result: IActionResult) => this.onGatherRainbow(argument.item));
 
 		this.itemNimbus = this.addItem({
 			description: "A Flying Nimbus.",

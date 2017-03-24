@@ -1,6 +1,5 @@
 define(["require", "exports", "creature/ICreature", "Enums", "language/Messages", "mod/Mod", "tile/Terrains", "Utilities"], function (require, exports, ICreature_1, Enums_1, Messages_1, Mod_1, Terrains_1, Utilities) {
     "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
     ;
     class Troposphere extends Mod_1.default {
         onInitialize(saveDataGlobal) { }
@@ -195,8 +194,14 @@ define(["require", "exports", "creature/ICreature", "Enums", "language/Messages"
             }
         }
         initializeItems() {
-            const actionTypeFly = this.addActionType("Fly", "Fly to/from the Troposphere.", (player, argument, result) => this.onNimbus(argument.item));
-            const actionTypeGatherRainbow = this.addActionType("Gather Rainbow", "Gather a Rainbow.", (player, argument, result) => this.onGatherRainbow(argument.item));
+            const actionTypeFly = this.addActionType({
+                name: "Fly",
+                description: "Fly to/from the Troposphere."
+            }, (player, argument, result) => this.onNimbus(argument.item));
+            const actionTypeGatherRainbow = this.addActionType({
+                name: "Gather Rainbow",
+                description: "Gather a Rainbow."
+            }, (player, argument, result) => this.onGatherRainbow(argument.item));
             this.itemNimbus = this.addItem({
                 description: "A Flying Nimbus.",
                 name: "Nimbus",
@@ -588,6 +593,7 @@ define(["require", "exports", "creature/ICreature", "Enums", "language/Messages"
         }
     }
     Troposphere.troposphereZ = Enums_1.WorldZ.Max + 1;
+    Object.defineProperty(exports, "__esModule", { value: true });
     exports.default = Troposphere;
 });
 //# sourceMappingURL=Troposphere.js.map
