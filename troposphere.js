@@ -1,5 +1,6 @@
 define(["require", "exports", "creature/ICreature", "Enums", "language/Messages", "mod/Mod", "tile/Terrains", "Utilities"], function (require, exports, ICreature_1, Enums_1, Messages_1, Mod_1, Terrains_1, Utilities) {
     "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     ;
     class Troposphere extends Mod_1.default {
         onInitialize(saveDataGlobal) { }
@@ -366,7 +367,7 @@ define(["require", "exports", "creature/ICreature", "Enums", "language/Messages"
                 canCauseStatus: [Enums_1.StatusType.Bleeding],
                 spawnTiles: ICreature_1.SpawnableTiles.None,
                 spawnReputation: 16000,
-                reputation: -300,
+                reputation: 300,
                 makeNoise: true,
                 loot: [{
                         item: this.itemRainbow,
@@ -385,7 +386,7 @@ define(["require", "exports", "creature/ICreature", "Enums", "language/Messages"
                 ai: ICreature_1.AiType.Scared,
                 moveType: Enums_1.MoveType.Land | Enums_1.MoveType.ShallowWater,
                 spawnTiles: ICreature_1.SpawnableTiles.None,
-                reputation: 200,
+                reputation: -200,
                 makeNoise: true,
                 jumpOver: true
             });
@@ -399,7 +400,7 @@ define(["require", "exports", "creature/ICreature", "Enums", "language/Messages"
                 damageType: Enums_1.DamageType.Piercing,
                 ai: ICreature_1.AiType.Neutral,
                 moveType: Enums_1.MoveType.Flying,
-                reputation: -100,
+                reputation: 100,
                 spawnTiles: ICreature_1.SpawnableTiles.None,
                 loot: [{ item: Enums_1.ItemType.Feather }, { item: Enums_1.ItemType.Feather }],
                 lootGroup: Enums_1.LootGroupType.Low
@@ -420,7 +421,7 @@ define(["require", "exports", "creature/ICreature", "Enums", "language/Messages"
                 blood: { r: 210, g: 125, b: 20 },
                 canCauseStatus: [Enums_1.StatusType.Bleeding],
                 spawnReputation: 32000,
-                reputation: -300,
+                reputation: 300,
                 makeNoise: true
             });
             this.creatureSprite = this.addCreature({
@@ -439,7 +440,7 @@ define(["require", "exports", "creature/ICreature", "Enums", "language/Messages"
                 blood: { r: 210, g: 125, b: 20 },
                 canCauseStatus: [Enums_1.StatusType.Bleeding],
                 spawnReputation: 32000,
-                reputation: -500,
+                reputation: 500,
                 makeNoise: true
             });
             this.creaturePool = [this.creatureBear, this.creatureRabbit, this.creatureCloudling, this.creatureLightningElemental];
@@ -593,7 +594,6 @@ define(["require", "exports", "creature/ICreature", "Enums", "language/Messages"
         }
     }
     Troposphere.troposphereZ = Enums_1.WorldZ.Max + 1;
-    Object.defineProperty(exports, "__esModule", { value: true });
     exports.default = Troposphere;
 });
 //# sourceMappingURL=Troposphere.js.map

@@ -501,7 +501,7 @@ export default class Troposphere extends Mod {
 			canCauseStatus: [StatusType.Bleeding],
 			spawnTiles: SpawnableTiles.None,
 			spawnReputation: 16000,
-			reputation: -300,
+			reputation: 300,
 			makeNoise: true,
 			loot: [{
 				item: this.itemRainbow,
@@ -524,7 +524,7 @@ export default class Troposphere extends Mod {
 			ai: AiType.Scared,
 			moveType: MoveType.Land | MoveType.ShallowWater,
 			spawnTiles: SpawnableTiles.None,
-			reputation: 200,
+			reputation: -200,
 			makeNoise: true,
 			jumpOver: true
 		});
@@ -546,7 +546,7 @@ export default class Troposphere extends Mod {
 			damageType: DamageType.Piercing,
 			ai: AiType.Neutral,
 			moveType: MoveType.Flying,
-			reputation: -100,
+			reputation: 100,
 			spawnTiles: SpawnableTiles.None,
 			loot: [{ item: ItemType.Feather }, { item: ItemType.Feather }],
 			lootGroup: LootGroupType.Low
@@ -573,7 +573,7 @@ export default class Troposphere extends Mod {
 			blood: { r: 210, g: 125, b: 20 },
 			canCauseStatus: [StatusType.Bleeding],
 			spawnReputation: 32000,
-			reputation: -300,
+			reputation: 300,
 			makeNoise: true
 		});
 
@@ -598,7 +598,7 @@ export default class Troposphere extends Mod {
 			blood: { r: 210, g: 125, b: 20 },
 			canCauseStatus: [StatusType.Bleeding],
 			spawnReputation: 32000,
-			reputation: -500,
+			reputation: 500,
 			makeNoise: true
 		});
 
