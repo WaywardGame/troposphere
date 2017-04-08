@@ -1,7 +1,8 @@
 import { IActionArgument, IActionResult } from "action/IAction";
 import { AiType, ICreature, SpawnableTiles, SpawnGroup } from "creature/ICreature";
-import { ActionType, CreatureType, DamageType, Defense, Delay, HairColor, Hairstyle, IPoint, ItemType, LootGroupType, MoveType, RenderFlag, Resistances, SfxType, SkillType, SkinColor, StatusType, TerrainType, Vulnerabilities, WorldZ } from "Enums";
+import { ActionType, CreatureType, DamageType, Defense, Delay, HairColor, Hairstyle, IPoint, ItemType, ItemTypeGroup, LootGroupType, MoveType, RecipeLevel, RenderFlag, Resistances, SfxType, SkillType, SkinColor, StatusType, TerrainType, Vulnerabilities, WorldZ } from "Enums";
 import { IItem } from "item/IItem";
+import { RecipeComponent } from "item/Items";
 import { messages, MessageType } from "language/Messages";
 import Mod from "mod/Mod";
 import { IPlayer } from "player/IPlayer";
@@ -13,7 +14,7 @@ import * as Utilities from "Utilities";
 interface ITroposphereData {
 	seed: number;
 	flying: boolean;
-};
+}
 
 export default class Troposphere extends Mod {
 	private static readonly troposphereZ: number = WorldZ.Max + 1;
@@ -78,11 +79,11 @@ export default class Troposphere extends Mod {
 			};
 		}
 
+		this.initializeSkills();
 		this.initializeItems();
 		this.initializeDoodads();
 		this.initializeTerrain();
 		this.initializeCreatures();
-		this.initializeSkills();
 
 		this.messageFlewToTroposphere = this.addMessage("FlewToTroposphere", "You flew to the Troposphere.");
 		this.messageFlewToTroposphereFailure = this.addMessage("FlewToTroposphereFailure", "You are unable to fly to the Troposphere. Try flying from another spot.");
@@ -310,13 +311,6 @@ export default class Troposphere extends Mod {
 			description: "Gather a Rainbow."
 		}, (player: IPlayer, argument: IActionArgument, result: IActionResult) => this.onGatherRainbow(argument.item));
 
-		this.itemNimbus = this.addItem({
-			description: "A Flying Nimbus.",
-			name: "Nimbus",
-			weight: 0.1,
-			use: [actionTypeFly]
-		});
-
 		this.itemRainbow = this.addItem({
 			description: "A Magical Rainbow.",
 			name: "Rainbow",
@@ -347,6 +341,22 @@ export default class Troposphere extends Mod {
 			description: "A Cloudstone.",
 			name: "Cloudstone",
 			weight: 1
+		});
+
+		this.itemNimbus = this.addItem({
+			description: "A Flying Nimbus.",
+			name: "Nimbus",
+			use: [actionTypeFly],
+			recipe: {
+				components: [
+					RecipeComponent(ItemType.Feather, 2, 2, 2),
+					RecipeComponent(this.itemCloudstone, 1, 1, 1)
+				],
+				skill: this.skillFlying,
+				level: RecipeLevel.Simple,
+				reputation: 50
+			},
+			disassemble: true
 		});
 
 		const glassBottle = this.getItemByType(ItemType.GlassBottle);

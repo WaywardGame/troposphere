@@ -1,7 +1,6 @@
-define(["require", "exports", "creature/ICreature", "Enums", "language/Messages", "mod/Mod", "tile/Terrains", "Utilities"], function (require, exports, ICreature_1, Enums_1, Messages_1, Mod_1, Terrains_1, Utilities) {
+define(["require", "exports", "creature/ICreature", "Enums", "item/Items", "language/Messages", "mod/Mod", "tile/Terrains", "Utilities"], function (require, exports, ICreature_1, Enums_1, Items_1, Messages_1, Mod_1, Terrains_1, Utilities) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    ;
     class Troposphere extends Mod_1.default {
         onInitialize(saveDataGlobal) { }
         onLoad(data) {
@@ -13,11 +12,11 @@ define(["require", "exports", "creature/ICreature", "Enums", "language/Messages"
                     flying: false
                 };
             }
+            this.initializeSkills();
             this.initializeItems();
             this.initializeDoodads();
             this.initializeTerrain();
             this.initializeCreatures();
-            this.initializeSkills();
             this.messageFlewToTroposphere = this.addMessage("FlewToTroposphere", "You flew to the Troposphere.");
             this.messageFlewToTroposphereFailure = this.addMessage("FlewToTroposphereFailure", "You are unable to fly to the Troposphere. Try flying from another spot.");
             this.messageFlewToLand = this.addMessage("FlewToLand", "You flew back to land.");
@@ -203,12 +202,6 @@ define(["require", "exports", "creature/ICreature", "Enums", "language/Messages"
                 name: "Gather Rainbow",
                 description: "Gather a Rainbow."
             }, (player, argument, result) => this.onGatherRainbow(argument.item));
-            this.itemNimbus = this.addItem({
-                description: "A Flying Nimbus.",
-                name: "Nimbus",
-                weight: 0.1,
-                use: [actionTypeFly]
-            });
             this.itemRainbow = this.addItem({
                 description: "A Magical Rainbow.",
                 name: "Rainbow",
@@ -235,6 +228,21 @@ define(["require", "exports", "creature/ICreature", "Enums", "language/Messages"
                 description: "A Cloudstone.",
                 name: "Cloudstone",
                 weight: 1
+            });
+            this.itemNimbus = this.addItem({
+                description: "A Flying Nimbus.",
+                name: "Nimbus",
+                use: [actionTypeFly],
+                recipe: {
+                    components: [
+                        Items_1.RecipeComponent(Enums_1.ItemType.Feather, 2, 2, 2),
+                        Items_1.RecipeComponent(this.itemCloudstone, 1, 1, 1)
+                    ],
+                    skill: this.skillFlying,
+                    level: Enums_1.RecipeLevel.Simple,
+                    reputation: 50
+                },
+                disassemble: true
             });
             const glassBottle = this.getItemByType(Enums_1.ItemType.GlassBottle);
             if (glassBottle && glassBottle.use) {
