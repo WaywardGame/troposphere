@@ -53,7 +53,8 @@ define(["require", "exports", "creature/ICreature", "Enums", "item/Items", "lang
                 for (let y = 0; y < game.mapSize; y++) {
                     tile = game.setTile(x, y, Troposphere.troposphereZ, game.getTile(x, y, Troposphere.troposphereZ) || {});
                     let tileGfx = 0;
-                    const terrainDescription = Terrains_1.default[Utilities.TileHelpers.getType(game.getTile(x, y, Enums_1.WorldZ.Overworld))];
+                    const overworldTile = game.getTile(x, y, Enums_1.WorldZ.Overworld);
+                    const terrainDescription = Terrains_1.default[Utilities.TileHelpers.getType(overworldTile)];
                     const normalTerrainType = terrainDescription ? terrainDescription.terrainType : Enums_1.TerrainType.Grass;
                     switch (normalTerrainType) {
                         case Enums_1.TerrainType.Rocks:
@@ -75,23 +76,19 @@ define(["require", "exports", "creature/ICreature", "Enums", "item/Items", "lang
                                 terrainType = this.terrainStorm;
                             }
                             break;
-                        case Enums_1.TerrainType.Tree:
-                        case Enums_1.TerrainType.BareTree:
-                        case Enums_1.TerrainType.BarePalmTree:
-                        case Enums_1.TerrainType.TreeWithVines:
-                        case Enums_1.TerrainType.TreeWithBerries:
-                        case Enums_1.TerrainType.TreeWithFungus:
-                        case Enums_1.TerrainType.PalmTree:
-                        case Enums_1.TerrainType.PalmTreeWithCoconuts:
-                            if (Utilities.Random.nextFloat() <= doodadChance) {
-                                terrainType = this.terrainCloudBoulder;
+                        default:
+                            const doodad = overworldTile.doodad;
+                            if (doodad && doodad.canGrow()) {
+                                if (Utilities.Random.nextFloat() <= doodadChance) {
+                                    terrainType = this.terrainCloudBoulder;
+                                }
+                                else {
+                                    terrainType = this.terrainCloud;
+                                }
                             }
                             else {
                                 terrainType = this.terrainCloud;
                             }
-                            break;
-                        default:
-                            terrainType = this.terrainCloud;
                             break;
                     }
                     if (terrainType === this.terrainCloud || terrainType === this.terrainStorm) {
@@ -178,7 +175,7 @@ define(["require", "exports", "creature/ICreature", "Enums", "item/Items", "lang
                 }
                 else {
                     localPlayer.damage(-40 * damagePercentage, Messages_1.messages[this.messageDeathByFalling]);
-                    corpseManager.create({ type: Enums_1.CreatureType.Blood, x: localPlayer.x, y: localPlayer.y, z: localPlayer.z });
+                    corpseManager.create(Enums_1.CreatureType.Blood, localPlayer.x, localPlayer.y, localPlayer.z);
                 }
                 game.passTurn(localPlayer);
             }
@@ -292,7 +289,7 @@ define(["require", "exports", "creature/ICreature", "Enums", "item/Items", "lang
                 name: "Cloud Boulder",
                 particles: { r: 250, g: 250, b: 250 },
                 strength: 1,
-                skill: Enums_1.SkillType.Lumberjacking,
+                gatherSkillUse: Enums_1.SkillType.Lumberjacking,
                 gather: true,
                 noLos: true,
                 sound: Enums_1.SfxType.TreeHit,
@@ -305,7 +302,7 @@ define(["require", "exports", "creature/ICreature", "Enums", "item/Items", "lang
                 name: "Cloudstone",
                 particles: { r: 250, g: 250, b: 250 },
                 strength: 8,
-                skill: Enums_1.SkillType.Mining,
+                gatherSkillUse: Enums_1.SkillType.Mining,
                 gather: true,
                 noLos: true,
                 sound: Enums_1.SfxType.RockHit,
@@ -328,7 +325,7 @@ define(["require", "exports", "creature/ICreature", "Enums", "item/Items", "lang
                 name: "Storm Boulder",
                 particles: { r: 20, g: 20, b: 20 },
                 strength: 2,
-                skill: Enums_1.SkillType.Lumberjacking,
+                gatherSkillUse: Enums_1.SkillType.Lumberjacking,
                 gather: true,
                 noLos: true,
                 sound: Enums_1.SfxType.TreeHit,
@@ -341,7 +338,7 @@ define(["require", "exports", "creature/ICreature", "Enums", "item/Items", "lang
                 name: "Stormstone",
                 particles: { r: 20, g: 20, b: 20 },
                 strength: 12,
-                skill: Enums_1.SkillType.Mining,
+                gatherSkillUse: Enums_1.SkillType.Mining,
                 gather: true,
                 noLos: true,
                 sound: Enums_1.SfxType.RockHit,
@@ -371,7 +368,7 @@ define(["require", "exports", "creature/ICreature", "Enums", "item/Items", "lang
                 defense: new Enums_1.Defense(3, new Enums_1.Resistances(Enums_1.DamageType.Piercing, 3, Enums_1.DamageType.Blunt, 1), new Enums_1.Vulnerabilities()),
                 damageType: Enums_1.DamageType.Slashing | Enums_1.DamageType.Blunt,
                 ai: ICreature_1.AiType.Hostile,
-                moveType: Enums_1.MoveType.Land | Enums_1.MoveType.ShallowWater | Enums_1.MoveType.Water | Enums_1.MoveType.BreakWalls,
+                moveType: Enums_1.MoveType.Land | Enums_1.MoveType.ShallowWater | Enums_1.MoveType.Water | Enums_1.MoveType.BreakDoodads,
                 canCauseStatus: [Enums_1.StatusType.Bleeding],
                 spawnTiles: ICreature_1.SpawnableTiles.None,
                 spawnReputation: 16000,
@@ -587,10 +584,7 @@ define(["require", "exports", "creature/ICreature", "Enums", "item/Items", "lang
             return undefined;
         }
         isFlyableTile(tile) {
-            if (tile.creatureId !== undefined && tile.creatureId !== null) {
-                return false;
-            }
-            if (tile.doodadId !== undefined && tile.doodadId !== null) {
+            if (tile.creature || tile.doodad) {
                 return false;
             }
             const terrainType = Utilities.TileHelpers.getType(tile);

@@ -132,7 +132,8 @@ export default class Troposphere extends Mod {
 				tile = game.setTile(x, y, Troposphere.troposphereZ, game.getTile(x, y, Troposphere.troposphereZ) || {} as ITile);
 
 				let tileGfx = 0;
-				const terrainDescription = Terrains[Utilities.TileHelpers.getType(game.getTile(x, y, WorldZ.Overworld))];
+				const overworldTile = game.getTile(x, y, WorldZ.Overworld);
+				const terrainDescription = Terrains[Utilities.TileHelpers.getType(overworldTile)];
 				const normalTerrainType = terrainDescription ? terrainDescription.terrainType : TerrainType.Grass;
 
 				switch (normalTerrainType) {
@@ -157,23 +158,17 @@ export default class Troposphere extends Mod {
 						}
 						break;
 
-					case TerrainType.Tree:
-					case TerrainType.BareTree:
-					case TerrainType.BarePalmTree:
-					case TerrainType.TreeWithVines:
-					case TerrainType.TreeWithBerries:
-					case TerrainType.TreeWithFungus:
-					case TerrainType.PalmTree:
-					case TerrainType.PalmTreeWithCoconuts:
-						if (Utilities.Random.nextFloat() <= doodadChance) {
-							terrainType = this.terrainCloudBoulder;
+					default:
+						const doodad = overworldTile.doodad;
+						if (doodad && doodad.canGrow()) {
+							if (Utilities.Random.nextFloat() <= doodadChance) {
+								terrainType = this.terrainCloudBoulder;
+							} else {
+								terrainType = this.terrainCloud;
+							}
 						} else {
 							terrainType = this.terrainCloud;
 						}
-						break;
-
-					default:
-						terrainType = this.terrainCloud;
 						break;
 				}
 
@@ -279,7 +274,7 @@ export default class Troposphere extends Mod {
 				localPlayer.damage(-30 * damagePercentage, messages[this.messageDeathByFalling]);
 			} else {
 				localPlayer.damage(-40 * damagePercentage, messages[this.messageDeathByFalling]);
-				corpseManager.create({ type: CreatureType.Blood, x: localPlayer.x, y: localPlayer.y, z: localPlayer.z });
+				corpseManager.create(CreatureType.Blood, localPlayer.x, localPlayer.y, localPlayer.z);
 			}
 
 			game.passTurn(localPlayer);
@@ -414,7 +409,7 @@ export default class Troposphere extends Mod {
 			name: "Cloud Boulder",
 			particles: { r: 250, g: 250, b: 250 },
 			strength: 1,
-			skill: SkillType.Lumberjacking,
+			gatherSkillUse: SkillType.Lumberjacking,
 			gather: true,
 			noLos: true,
 			sound: SfxType.TreeHit,
@@ -428,7 +423,7 @@ export default class Troposphere extends Mod {
 			name: "Cloudstone",
 			particles: { r: 250, g: 250, b: 250 },
 			strength: 8,
-			skill: SkillType.Mining,
+			gatherSkillUse: SkillType.Mining,
 			gather: true,
 			noLos: true,
 			sound: SfxType.RockHit,
@@ -454,7 +449,7 @@ export default class Troposphere extends Mod {
 			name: "Storm Boulder",
 			particles: { r: 20, g: 20, b: 20 },
 			strength: 2,
-			skill: SkillType.Lumberjacking,
+			gatherSkillUse: SkillType.Lumberjacking,
 			gather: true,
 			noLos: true,
 			sound: SfxType.TreeHit,
@@ -468,7 +463,7 @@ export default class Troposphere extends Mod {
 			name: "Stormstone",
 			particles: { r: 20, g: 20, b: 20 },
 			strength: 12,
-			skill: SkillType.Mining,
+			gatherSkillUse: SkillType.Mining,
 			gather: true,
 			noLos: true,
 			sound: SfxType.RockHit,
@@ -507,7 +502,7 @@ export default class Troposphere extends Mod {
 			),
 			damageType: DamageType.Slashing | DamageType.Blunt,
 			ai: AiType.Hostile,
-			moveType: MoveType.Land | MoveType.ShallowWater | MoveType.Water | MoveType.BreakWalls,
+			moveType: MoveType.Land | MoveType.ShallowWater | MoveType.Water | MoveType.BreakDoodads,
 			canCauseStatus: [StatusType.Bleeding],
 			spawnTiles: SpawnableTiles.None,
 			spawnReputation: 16000,
@@ -794,11 +789,7 @@ export default class Troposphere extends Mod {
 	}
 
 	public isFlyableTile(tile: ITile): boolean {
-		if (tile.creatureId !== undefined && tile.creatureId !== null) {
-			return false;
-		}
-
-		if (tile.doodadId !== undefined && tile.doodadId !== null) {
+		if (tile.creature || tile.doodad) {
 			return false;
 		}
 

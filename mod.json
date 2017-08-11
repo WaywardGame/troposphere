@@ -19,7 +19,7 @@
 	],
 	"unloadable": false,
 	"compatibleMinorVersions": [
-		3
+		4
 	],
 	"file": "Troposphere.js",
 	"publishedFileId": "474819705"
