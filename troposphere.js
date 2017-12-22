@@ -8,8 +8,7 @@ define(["require", "exports", "creature/ICreature", "Enums", "item/Items", "lang
             this.firstLoad = !this.data;
             if (this.firstLoad) {
                 this.data = {
-                    seed: new Date().getTime(),
-                    flying: false
+                    seed: new Date().getTime()
                 };
             }
             this.initializeSkills();
@@ -126,7 +125,7 @@ define(["require", "exports", "creature/ICreature", "Enums", "item/Items", "lang
             }
         }
         preRenderWorld(tileScale, viewWidth, viewHeight) {
-            if (!this.data.flying) {
+            if (localPlayer.z !== Troposphere.troposphereZ) {
                 return;
             }
             if (this.falling) {
@@ -151,54 +150,50 @@ define(["require", "exports", "creature/ICreature", "Enums", "item/Items", "lang
                 localPlayer.createItemInInventory(this.itemNimbus);
             }
         }
-        onTurnStart() {
-            if (!this.data.flying) {
+        onMove(player, nextX, nextY, tile, direction) {
+            if (player.z !== Troposphere.troposphereZ) {
                 return;
             }
             this.moving = true;
+            const terrainType = Utilities.TileHelpers.getType(tile);
+            if (terrainType === this.terrainHole) {
+                this.falling = true;
+                fieldOfView.compute(false);
+            }
         }
-        onTurnComplete() {
-            if (!this.data.flying) {
+        onMoveComplete(player) {
+            if (player.z !== Troposphere.troposphereZ) {
                 return;
             }
             this.moving = false;
             if (this.falling) {
                 this.falling = false;
-                this.setFlying(false, false);
-                ui.displayMessage(localPlayer, this.messageFellToLand, Messages_1.MessageType.Bad);
-                const flyingSkill = localPlayer.skills[this.skillFlying];
+                this.setFlying(player, false, false);
+                ui.displayMessage(player, this.messageFellToLand, Messages_1.MessageType.Bad);
+                const flyingSkill = player.skills[this.skillFlying];
                 const damagePercentage = flyingSkill ? 1 - (flyingSkill.percent / 100) : 1;
-                const tile = game.getTile(localPlayer.x, localPlayer.y, localPlayer.z);
+                const tile = game.getTile(player.x, player.y, player.z);
                 const terrainType = Utilities.TileHelpers.getType(tile);
                 if (tileAtlas.isWater(terrainType)) {
-                    localPlayer.damage(-30 * damagePercentage, Messages_1.messages[this.messageDeathByFalling]);
+                    player.damage(-30 * damagePercentage, Messages_1.messages[this.messageDeathByFalling]);
                 }
                 else {
-                    localPlayer.damage(-40 * damagePercentage, Messages_1.messages[this.messageDeathByFalling]);
-                    corpseManager.create(Enums_1.CreatureType.Blood, localPlayer.x, localPlayer.y, localPlayer.z);
+                    player.damage(-40 * damagePercentage, Messages_1.messages[this.messageDeathByFalling]);
+                    corpseManager.create(Enums_1.CreatureType.Blood, player.x, player.y, player.z);
                 }
-                game.passTurn(localPlayer);
-            }
-            else {
-                const tile = game.getTile(localPlayer.x, localPlayer.y, localPlayer.z);
-                const terrainType = Utilities.TileHelpers.getType(tile);
-                if (terrainType === this.terrainHole) {
-                    this.falling = true;
-                    localPlayer.addDelay(Enums_1.Delay.Collision, true);
-                    game.passTurn(localPlayer);
-                    fieldOfView.compute(false);
-                }
+                player.addDelay(Enums_1.Delay.Collision, true);
+                game.passTurn(player);
             }
         }
         initializeItems() {
             const actionTypeFly = this.addActionType({
                 name: "Fly",
                 description: "Fly to/from the Troposphere."
-            }, (player, argument, result) => this.onNimbus(argument.item));
+            }, (player, argument, result) => this.onNimbus(player, argument.item));
             const actionTypeGatherRainbow = this.addActionType({
                 name: "Gather Rainbow",
                 description: "Gather a Rainbow."
-            }, (player, argument, result) => this.onGatherRainbow(argument.item));
+            }, (player, argument, result) => this.onGatherRainbow(player, argument.item));
             this.itemRainbow = this.addItem({
                 description: "A Magical Rainbow.",
                 name: "Rainbow",
@@ -213,7 +208,7 @@ define(["require", "exports", "creature/ICreature", "Enums", "item/Items", "lang
                 description: "A Magical Rainbow in a Glass Bottle.",
                 name: "Rainbow Glass Bottle",
                 weight: 1.0,
-                use: [Enums_1.ActionType.Drink],
+                use: [Enums_1.ActionType.DrinkItem],
                 returnOnUse: [Enums_1.ItemType.GlassBottle, false]
             });
             this.itemSnowflakes = this.addItem({
@@ -298,6 +293,10 @@ define(["require", "exports", "creature/ICreature", "Enums", "item/Items", "lang
                 noBackground: true,
                 doodad: this.doodadCloudBoulder
             }, this.terrainCloud);
+            this.addTerrainResource(this.terrainCloudBoulder, [{
+                    type: this.itemCloudstone,
+                    chance: 45
+                }]);
             this.terrainCloudstone = this.addTerrain({
                 name: "Cloudstone",
                 particles: { r: 250, g: 250, b: 250 },
@@ -334,6 +333,10 @@ define(["require", "exports", "creature/ICreature", "Enums", "item/Items", "lang
                 noBackground: true,
                 doodad: this.doodadStormBoulder
             }, this.terrainStorm);
+            this.addTerrainResource(this.terrainStormBoulder, [{
+                    type: this.itemCloudstone,
+                    chance: 100
+                }]);
             this.terrainStormstone = this.addTerrain({
                 name: "Stormstone",
                 particles: { r: 20, g: 20, b: 20 },
@@ -456,32 +459,32 @@ define(["require", "exports", "creature/ICreature", "Enums", "item/Items", "lang
                 description: "Increases your damage resistance when falling from the Troposphere."
             });
         }
-        onNimbus(item) {
-            this.setFlying(!this.data.flying, true);
+        onNimbus(player, item) {
+            this.setFlying(player, player.z !== Troposphere.troposphereZ, true);
         }
-        onGatherRainbow(item) {
-            const tile = game.getTileInFrontOfPlayer(localPlayer);
+        onGatherRainbow(player, item) {
+            const tile = game.getTileInFrontOfPlayer(player);
             const tileType = Utilities.TileHelpers.getType(tile);
             if (!item || tileType !== this.terrainRainbow) {
-                ui.displayMessage(localPlayer, this.messageNoRainbow);
+                ui.displayMessage(player, this.messageNoRainbow);
                 return;
             }
-            ui.displayMessage(localPlayer, this.messageGatheredRainbow);
-            game.particle.create(localPlayer.x + localPlayer.direction.x, localPlayer.y + localPlayer.direction.y, localPlayer.z, { r: 12, g: 128, b: 247 });
-            const newItem = itemManager.create(this.itemRainbowGlassBottle, localPlayer.inventory, item.quality);
+            ui.displayMessage(player, this.messageGatheredRainbow);
+            game.particle.create(player.x + player.direction.x, player.y + player.direction.y, player.z, { r: 12, g: 128, b: 247 });
+            const newItem = itemManager.create(this.itemRainbowGlassBottle, player.inventory, item.quality);
             newItem.decay = item.decay;
             newItem.minDur = item.minDur;
             newItem.maxDur = item.maxDur;
             itemManager.remove(item);
-            game.changeTile({ type: this.terrainCloud }, localPlayer.x + localPlayer.direction.x, localPlayer.y + localPlayer.direction.y, localPlayer.z, false);
-            game.passTurn(localPlayer);
+            game.changeTile({ type: this.terrainCloud }, player.x + player.direction.x, player.y + player.direction.y, player.z, false);
+            game.passTurn(player);
         }
-        canConsumeItem(itemType, actionType) {
-            if (itemType === this.itemRainbowGlassBottle && actionType === Enums_1.ActionType.Drink) {
-                localPlayer.customization = {
-                    hairStyle: Utilities.Enums.getRandomIndex(Enums_1.Hairstyle),
-                    hairColor: Utilities.Enums.getRandomIndex(Enums_1.HairColor),
-                    skinColor: Utilities.Enums.getRandomIndex(Enums_1.SkinColor)
+        canConsumeItem(player, itemType, actionType) {
+            if (itemType === this.itemRainbowGlassBottle && actionType === Enums_1.ActionType.DrinkItem) {
+                player.customization = {
+                    hairStyle: Enums_1.HairStyle[Utilities.Enums.getRandomIndex(Enums_1.HairStyle)],
+                    hairColor: Enums_1.HairColor[Utilities.Enums.getRandomIndex(Enums_1.HairColor)],
+                    skinColor: Enums_1.SkinColor[Utilities.Enums.getRandomIndex(Enums_1.SkinColor)]
                 };
                 return true;
             }
@@ -492,19 +495,19 @@ define(["require", "exports", "creature/ICreature", "Enums", "item/Items", "lang
             }
             creaturePool.push.apply(creaturePool, this.creaturePool);
         }
-        canCreatureMove(creatureId, creature, tile) {
+        canCreatureMove(creature, tile) {
             if (tile && Utilities.TileHelpers.getType(tile) === this.terrainHole) {
                 return creature.type !== this.creatureBear && creature.type !== this.creatureRabbit;
             }
         }
-        canCreatureAttack(creatureId, creature) {
+        canCreatureAttack(creature, enemy) {
             if (creature.type !== this.creatureSprite) {
                 return;
             }
             const creatureObj = creature;
             creatureObj.justAttacked = true;
         }
-        canSeeCreature(creatureId, creature, tile) {
+        canSeeCreature(creature, tile) {
             if (creature.type !== this.creatureSprite) {
                 return;
             }
@@ -520,70 +523,27 @@ define(["require", "exports", "creature/ICreature", "Enums", "item/Items", "lang
             creatureObj.nextVisibleCount--;
             return false;
         }
-        setFlying(flying, passTurn) {
+        setFlying(player, flying, passTurn) {
             const z = !flying ? Enums_1.WorldZ.Overworld : Troposphere.troposphereZ;
-            const openTile = this.findOpenTile(z);
-            if (openTile === undefined || localPlayer.z === Enums_1.WorldZ.Cave) {
+            const openTile = Utilities.TileHelpers.findMatchingTile(player, this.isFlyableTile.bind(this));
+            if (openTile === undefined || player.z === Enums_1.WorldZ.Cave) {
                 if (passTurn) {
-                    ui.displayMessage(localPlayer, flying ? this.messageFlewToTroposphereFailure : this.messageFlewToLandFailure, Messages_1.MessageType.Bad);
+                    ui.displayMessage(player, flying ? this.messageFlewToTroposphereFailure : this.messageFlewToLandFailure, Messages_1.MessageType.Bad);
                 }
                 return false;
             }
-            this.data.flying = flying;
-            localPlayer.x = openTile.x;
-            localPlayer.y = openTile.y;
-            localPlayer.z = z;
-            localPlayer.raft = undefined;
-            localPlayer.skillGain(this.skillFlying);
+            player.x = openTile.x;
+            player.y = openTile.y;
+            player.z = z;
+            player.raft = undefined;
+            player.skillGain(this.skillFlying);
             if (passTurn) {
-                ui.displayMessage(localPlayer, flying ? this.messageFlewToTroposphere : this.messageFlewToLand, Messages_1.MessageType.Good);
-                game.passTurn(localPlayer);
+                ui.displayMessage(player, flying ? this.messageFlewToTroposphere : this.messageFlewToLand, Messages_1.MessageType.Good);
+                game.passTurn(player);
             }
             return true;
         }
-        findOpenTile(z) {
-            const q = [{ x: localPlayer.x, y: localPlayer.y }];
-            const visited = [];
-            let tilesChecked = 0;
-            const indexPoint = (point) => {
-                return `${point.x},${point.y}`;
-            };
-            while (q.length > 0) {
-                const point = q.pop();
-                const tile = game.getTile(point.x, point.y, z);
-                if (!tile) {
-                    continue;
-                }
-                if (this.isFlyableTile(tile)) {
-                    return point;
-                }
-                for (let i = 0; i < 4; i++) {
-                    const neighbor = { x: point.x, y: point.y };
-                    switch (i) {
-                        case 0:
-                            neighbor.x++;
-                            break;
-                        case 1:
-                            neighbor.x--;
-                            break;
-                        case 2:
-                            neighbor.y++;
-                            break;
-                        case 3:
-                            neighbor.y--;
-                            break;
-                    }
-                    if (visited.indexOf(indexPoint(neighbor)) > -1) {
-                        continue;
-                    }
-                    visited.push(indexPoint(neighbor));
-                    q.push(neighbor);
-                }
-                tilesChecked++;
-            }
-            return undefined;
-        }
-        isFlyableTile(tile) {
+        isFlyableTile(point, tile) {
             if (tile.creature || tile.doodad) {
                 return false;
             }

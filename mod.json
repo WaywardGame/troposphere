@@ -11,15 +11,15 @@
 		"OnCreateWorld",
 		"OnGameStart",
 		"OnSpawnCreatureFromGroup",
-		"OnTurnComplete",
-		"OnTurnStart",
+		"OnMove",
+		"OnMoveComplete",
 		"PostGenerateWorld",
 		"PreRenderWorld",
 		"ShouldRender"
 	],
 	"unloadable": false,
 	"compatibleMinorVersions": [
-		4
+		5
 	],
 	"file": "Troposphere.js",
 	"publishedFileId": "474819705"

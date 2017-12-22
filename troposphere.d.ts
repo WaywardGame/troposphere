@@ -1,7 +1,8 @@
 import { ICreature, SpawnGroup } from "creature/ICreature";
-import { ActionType, CreatureType, IPoint, ItemType, RenderFlag } from "Enums";
+import { ActionType, CreatureType, FacingDirection, IPointZ, ItemType, RenderFlag } from "Enums";
 import { IItem } from "item/IItem";
 import Mod from "mod/Mod";
+import { IPlayer } from "player/IPlayer";
 import IWorld from "renderer/IWorld";
 import { ITile } from "tile/ITerrain";
 export default class Troposphere extends Mod {
@@ -53,21 +54,20 @@ export default class Troposphere extends Mod {
     preRenderWorld(tileScale: number, viewWidth: number, viewHeight: number): void;
     shouldRender(): RenderFlag.Player | undefined;
     onGameStart(isLoadingSave: boolean): void;
-    onTurnStart(): void;
-    onTurnComplete(): void;
+    onMove(player: IPlayer, nextX: number, nextY: number, tile: ITile, direction: FacingDirection): boolean | undefined;
+    onMoveComplete(player: IPlayer): void;
     initializeItems(): void;
     initializeDoodads(): void;
     initializeTerrain(): void;
     initializeCreatures(): void;
     initializeSkills(): void;
-    onNimbus(item: IItem | undefined): void;
-    onGatherRainbow(item: IItem | undefined): void;
-    canConsumeItem(itemType: ItemType, actionType: ActionType): boolean | undefined;
+    onNimbus(player: IPlayer, item: IItem | undefined): void;
+    onGatherRainbow(player: IPlayer, item: IItem | undefined): void;
+    canConsumeItem(player: IPlayer, itemType: ItemType, actionType: ActionType): boolean | undefined;
     onSpawnCreatureFromGroup(creatureGroup: SpawnGroup, creaturePool: CreatureType[], x: number, y: number, z: number): boolean | undefined;
-    canCreatureMove(creatureId: number, creature: ICreature, tile?: ITile): boolean | undefined;
-    canCreatureAttack(creatureId: number, creature: ICreature): boolean | undefined;
-    canSeeCreature(creatureId: number, creature: ICreature, tile: ITile): boolean | undefined;
-    setFlying(flying: boolean, passTurn: boolean): boolean;
-    findOpenTile(z: number): IPoint | undefined;
-    isFlyableTile(tile: ITile): boolean;
+    canCreatureMove(creature: ICreature, tile?: ITile): boolean | undefined;
+    canCreatureAttack(creature: ICreature, enemy: IPlayer | ICreature): boolean | undefined;
+    canSeeCreature(creature: ICreature, tile: ITile): boolean | undefined;
+    setFlying(player: IPlayer, flying: boolean, passTurn: boolean): boolean;
+    isFlyableTile(point: IPointZ, tile: ITile): boolean;
 }
