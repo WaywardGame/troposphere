@@ -1,6 +1,6 @@
 import { IActionArgument, IActionResult } from "action/IAction";
 import { AiType, ICreature, SpawnableTiles, SpawnGroup } from "creature/ICreature";
-import { ActionType, CreatureType, DamageType, Defense, Delay, FacingDirection, HairColor, IPoint, IPointZ, ItemType, ItemTypeGroup, LootGroupType, MoveType, RecipeLevel, RenderFlag, Resistances, SfxType, SkillType, SkinColor, StatusType, TerrainType, Vulnerabilities, WorldZ, HairStyle } from "Enums";
+import { ActionType, CreatureType, DamageType, Defense, Delay, FacingDirection, HairColor, HairStyle, IPoint, IPointZ, ItemType, ItemTypeGroup, LootGroupType, MoveType, RecipeLevel, RenderFlag, Resistances, SfxType, SkillType, SkinColor, StatusType, TerrainType, Vulnerabilities, WorldZ } from "Enums";
 import { IItem } from "item/IItem";
 import { RecipeComponent } from "item/Items";
 import { messages, MessageType } from "language/Messages";
@@ -151,9 +151,11 @@ export default class Troposphere extends Mod {
 					case TerrainType.ShallowFreshWater:
 						if (Utilities.Random.nextFloat() <= doodadChanceStorm) {
 							terrainType = this.terrainStormBoulder;
+
 						} else {
 							terrainType = this.terrainStorm;
 						}
+
 						break;
 
 					default:
@@ -161,12 +163,15 @@ export default class Troposphere extends Mod {
 						if (doodad && doodad.canGrow()) {
 							if (Utilities.Random.nextFloat() <= doodadChance) {
 								terrainType = this.terrainCloudBoulder;
+
 							} else {
 								terrainType = this.terrainCloud;
 							}
+
 						} else {
 							terrainType = this.terrainCloud;
 						}
+
 						break;
 				}
 
@@ -197,6 +202,7 @@ export default class Troposphere extends Mod {
 							const aberrantChance = terrainType === this.terrainCloud ? creatureAberrantChance : creatureAberrantStormChance;
 							if (chance <= creatureSpriteChance) {
 								creatureManager.spawn(this.creatureSprite, x, y, Troposphere.troposphereZ, true, Utilities.Random.nextFloat() <= aberrantChance);
+
 							} else if (chance <= creatureChance) {
 								const creatureType = this.creaturePool[Utilities.Random.nextInt(this.creaturePool.length)];
 								creatureManager.spawn(creatureType, x, y, Troposphere.troposphereZ, true, Utilities.Random.nextFloat() <= aberrantChance);
@@ -218,6 +224,7 @@ export default class Troposphere extends Mod {
 			const turnProgress = 1 - Math.min(1, Math.max(0, (localPlayer.movementFinishTime - game.absoluteTime) / (Delay.Movement * game.interval)));
 			tileScale = Utilities.Math2.easeInCubic(turnProgress, tileScale * 0.25, tileScale * 0.75, 1.0);
 			game.updateRender = true;
+
 		} else {
 			tileScale *= 0.25;
 		}
@@ -281,6 +288,7 @@ export default class Troposphere extends Mod {
 			const terrainType = Utilities.TileHelpers.getType(tile);
 			if (tileAtlas.isWater(terrainType)) {
 				player.damage(-30 * damagePercentage, messages[this.messageDeathByFalling]);
+				
 			} else {
 				player.damage(-40 * damagePercentage, messages[this.messageDeathByFalling]);
 				corpseManager.create(CreatureType.Blood, player.x, player.y, player.z);
@@ -665,6 +673,7 @@ export default class Troposphere extends Mod {
 		if (z !== Troposphere.troposphereZ) {
 			return;
 		}
+
 		creaturePool.push.apply(creaturePool, this.creaturePool);
 	}
 
@@ -713,6 +722,7 @@ export default class Troposphere extends Mod {
 			if (passTurn) {
 				ui.displayMessage(player, flying ? this.messageFlewToTroposphereFailure : this.messageFlewToLandFailure, MessageType.Bad);
 			}
+
 			return false;
 		}
 
