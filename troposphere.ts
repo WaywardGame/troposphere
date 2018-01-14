@@ -636,7 +636,7 @@ export default class Troposphere extends Mod {
 	}
 
 	public onGatherRainbow(player: IPlayer, item: IItem | undefined) {
-		const tile = game.getTileInFrontOfPlayer(player);
+		const tile = player.getFacingTile();
 		const tileType = Utilities.TileHelpers.getType(tile);
 		if (!item || tileType !== this.terrainRainbow) {
 			ui.displayMessage(player, this.messageNoRainbow);

@@ -463,7 +463,7 @@ define(["require", "exports", "creature/ICreature", "Enums", "item/Items", "lang
             this.setFlying(player, player.z !== Troposphere.troposphereZ, true);
         }
         onGatherRainbow(player, item) {
-            const tile = game.getTileInFrontOfPlayer(player);
+            const tile = player.getFacingTile();
             const tileType = Utilities.TileHelpers.getType(tile);
             if (!item || tileType !== this.terrainRainbow) {
                 ui.displayMessage(player, this.messageNoRainbow);
