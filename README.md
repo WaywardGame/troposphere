@@ -19,8 +19,8 @@ Open the folder in Visual Studio Code and build with Ctrl+Shift+B.
 ## Screenshots
 ![Troposphere](https://raw.githubusercontent.com/WaywardGame/troposphere/master/mod.png "Troposphere")
 
-![Screenshot #1](http://images.akamai.steamusercontent.com/ugc/312243491181374883/56954CC691456ED424E278572B7D9464DD6F1FEC/ "Screenshot #1")
+![Screenshot #1](https://steamuserimages-a.akamaihd.net/ugc/924796934159759883/3DA550AA51E540EC9B9A8165C9A34C04C93AE613/ "Screenshot #1")
 
-![Screenshot #2](http://images.akamai.steamusercontent.com/ugc/312243491181374909/8C1404CAB4EA14D4AF2225CC0570A694DC5E86A8/ "Screenshot #2")
+![Screenshot #2](https://steamuserimages-a.akamaihd.net/ugc/924796934159760133/7ECE98C93E1A3EF9E8863C9F496F2CD1439E9F12/ "Screenshot #2")
 
-![Screenshot #3](http://images.akamai.steamusercontent.com/ugc/312243491181374943/36AEBEDCADFB2B9CC2F1F72500BCEA02BF3FD7C9/ "Screenshot #3")
+![Screenshot #3](https://steamuserimages-a.akamaihd.net/ugc/924796934159760361/DE41858F420F6DF354D0143A0724ADBA7C68A08F/ "Screenshot #3")
