@@ -23,7 +23,6 @@ export default class Troposphere extends Mod {
 
 	private itemNimbus: number;
 	private itemRainbow: number;
-	private itemRainbowClayJug: number;
 	private itemRainbowGlassBottle: number;
 	private itemSnowflakes: number;
 	private itemCloudstone: number;
@@ -34,7 +33,6 @@ export default class Troposphere extends Mod {
 
 	private terrainCloudWater: number;
 	private terrainCloud: number;
-	private terrainRainbow: number;
 	private terrainCloudBoulder: number;
 	private terrainCloudstone: number;
 	private terrainStorm: number;
@@ -78,8 +76,8 @@ export default class Troposphere extends Mod {
 		}
 
 		this.initializeSkills();
-		this.initializeItems();
 		this.initializeDoodads();
+		this.initializeItems();
 		this.initializeTerrain();
 		this.initializeCreatures();
 
@@ -112,6 +110,7 @@ export default class Troposphere extends Mod {
 		// percentage
 		const doodadChance = 0.6;
 		const doodadChanceStorm = 0.2;
+		const doodadChanceRainbow = 0.1;
 
 		const terrainHoleChance = 0.02;
 
@@ -148,12 +147,22 @@ export default class Troposphere extends Mod {
 					case TerrainType.Seawater:
 					case TerrainType.FreshWater:
 					case TerrainType.ShallowSeawater:
-					case TerrainType.ShallowFreshWater:
 						if (Utilities.Random.nextFloat() <= doodadChanceStorm) {
 							terrainType = this.terrainStormBoulder;
 
 						} else {
 							terrainType = this.terrainStorm;
+						}
+
+						break;
+
+					case TerrainType.ShallowFreshWater:
+						if (Utilities.Random.nextFloat() <= doodadChanceRainbow) {
+							terrainType = this.terrainCloud;
+							doodadManager.create(this.doodadRainbow, x, y, Troposphere.troposphereZ);
+
+						} else {
+							terrainType = this.terrainCloudWater;
 						}
 
 						break;
@@ -302,54 +311,57 @@ export default class Troposphere extends Mod {
 	public initializeItems() {
 		const actionTypeFly = this.addActionType({
 			name: "Fly",
-			description: "Fly to/from the Troposphere."
+			description: "Fly to and from the Troposphere."
 		}, (player: IPlayer, argument: IActionArgument, result: IActionResult) => this.onNimbus(player, argument.item));
 
 		const actionTypeGatherRainbow = this.addActionType({
 			name: "Gather Rainbow",
-			description: "Gather a Rainbow."
+			description: "Gather a rainbow with a container."
 		}, (player: IPlayer, argument: IActionArgument, result: IActionResult) => this.onGatherRainbow(player, argument.item));
 
 		this.itemRainbow = this.addItem({
-			description: "A Magical Rainbow.",
-			name: "Rainbow",
-			weight: 0.1
-		});
-
-		this.itemRainbowClayJug = this.addItem({
-			description: "A Magical Rainbow in a Clay Jug.",
-			name: "Rainbow Clay Jug",
-			weight: 2.0
+			description: "A magical rainbow.",
+			name: "rainbow",
+			prefix: "a ",
+			weight: 0.1,
+			use: [ActionType.DrinkItem, ActionType.Build],
+			onUse: {
+				[ActionType.Build]: this.doodadRainbow
+			}
 		});
 
 		this.itemRainbowGlassBottle = this.addItem({
-			description: "A Magical Rainbow in a Glass Bottle.",
-			name: "Rainbow Glass Bottle",
+			description: "A magical rainbow in a glass bottle.",
+			name: "glass bottle filled with a rainbow",
+			prefix: "a ",
 			weight: 1.0,
 			use: [ActionType.DrinkItem],
 			returnOnUse: [ItemType.GlassBottle, false]
 		});
 
 		this.itemSnowflakes = this.addItem({
-			description: "A couple Snowflakes.",
-			name: "Snowflakes",
+			description: "A couple of snowflakes.",
+			name: "snowflakes",
 			weight: 0.1
 		});
 
 		this.itemCloudstone = this.addItem({
-			description: "A Cloudstone.",
-			name: "Cloudstone",
+			description: "A cloudstone.",
+			name: "cloudstone",
+			prefix: "a ",
 			weight: 1
 		});
 
 		this.itemNimbus = this.addItem({
-			description: "A Flying Nimbus.",
-			name: "Nimbus",
+			description: "The flying nimbus.",
+			name: "nimbus",
+			prefix: "a ",
 			use: [actionTypeFly],
 			recipe: {
 				components: [
 					RecipeComponent(ItemType.Feather, 2, 2, 2),
-					RecipeComponent(this.itemCloudstone, 1, 1, 1)
+					RecipeComponent(this.itemCloudstone, 1, 1, 1),
+					RecipeComponent(this.itemSnowflakes, 1, 1, 1)
 				],
 				skill: this.skillFlying,
 				level: RecipeLevel.Simple,
@@ -366,17 +378,20 @@ export default class Troposphere extends Mod {
 
 	public initializeDoodads() {
 		this.doodadCloudBoulder = this.addDoodad({
-			name: "Cloud Boulder",
+			name: "cloud boulder",
+			prefix: "a ",
 			particles: { r: 176, g: 153, b: 134 }
 		});
 
 		this.doodadStormBoulder = this.addDoodad({
-			name: "Storm Boulder",
+			name: "storm boulder",
+			prefix: "a ",
 			particles: { r: 176, g: 153, b: 134 }
 		});
 
 		this.doodadRainbow = this.addDoodad({
-			name: "Rainbow",
+			name: "rainbow",
+			prefix: "a ",
 			particles: { r: 176, g: 153, b: 134 },
 			blockMove: true
 		});
@@ -384,7 +399,7 @@ export default class Troposphere extends Mod {
 
 	public initializeTerrain() {
 		this.terrainCloudWater = this.addTerrain({
-			name: "Cloud Water",
+			name: "cloud water",
 			passable: true,
 			shallowWater: true,
 			particles: { r: 47, g: 128, b: 157 },
@@ -393,24 +408,15 @@ export default class Troposphere extends Mod {
 		});
 
 		this.terrainCloud = this.addTerrain({
-			name: "Cloud",
+			name: "clouds",
 			passable: true,
 			particles: { r: 250, g: 250, b: 250 },
 			noBackground: true
 		});
 
-		this.terrainRainbow = this.addTerrain({
-			name: "Rainbow",
-			passable: true,
-			particles: { r: 20, g: 20, b: 20 },
-			gather: true,
-			noGfxSwitch: true,
-			noBackground: true,
-			doodad: this.doodadRainbow
-		}, this.terrainCloud);
-
 		this.terrainCloudBoulder = this.addTerrain({
-			name: "Cloud Boulder",
+			name: "cloud boulder",
+			prefix: "a ",
 			particles: { r: 250, g: 250, b: 250 },
 			strength: 1,
 			gatherSkillUse: SkillType.Lumberjacking,
@@ -429,7 +435,7 @@ export default class Troposphere extends Mod {
 		}]);
 
 		this.terrainCloudstone = this.addTerrain({
-			name: "Cloudstone",
+			name: "cloudstone",
 			particles: { r: 250, g: 250, b: 250 },
 			strength: 8,
 			gatherSkillUse: SkillType.Mining,
@@ -448,14 +454,16 @@ export default class Troposphere extends Mod {
 		}]);
 
 		this.terrainStorm = this.addTerrain({
-			name: "Storm",
+			name: "storm",
+			prefix: "a ",
 			passable: true,
 			particles: { r: 20, g: 20, b: 20 },
 			noBackground: true
 		});
 
 		this.terrainStormBoulder = this.addTerrain({
-			name: "Storm Boulder",
+			name: "storm boulder",
+			prefix: "a ",
 			particles: { r: 20, g: 20, b: 20 },
 			strength: 2,
 			gatherSkillUse: SkillType.Lumberjacking,
@@ -474,7 +482,7 @@ export default class Troposphere extends Mod {
 		}]);
 
 		this.terrainStormstone = this.addTerrain({
-			name: "Stormstone",
+			name: "stormstone",
 			particles: { r: 20, g: 20, b: 20 },
 			strength: 12,
 			gatherSkillUse: SkillType.Mining,
@@ -493,7 +501,8 @@ export default class Troposphere extends Mod {
 		}]);
 
 		this.terrainHole = this.addTerrain({
-			name: "Hole",
+			name: "hole",
+			prefix: "a ",
 			passable: true,
 			particles: { r: 250, g: 250, b: 250 },
 			noBackground: true
@@ -502,7 +511,8 @@ export default class Troposphere extends Mod {
 
 	public initializeCreatures() {
 		this.creatureBear = this.addCreature({
-			name: "Cloud Bear",
+			name: "cloud bear",
+			prefix: "a ",
 			minhp: 18,
 			maxhp: 21,
 			minatk: 5,
@@ -530,7 +540,8 @@ export default class Troposphere extends Mod {
 		});
 
 		this.creatureRabbit = this.addCreature({
-			name: "Cloud Rabbit",
+			name: "cloud rabbit",
+			prefix: "a ",
 			minhp: 3,
 			maxhp: 6,
 			minatk: 1,
@@ -545,11 +556,13 @@ export default class Troposphere extends Mod {
 			spawnTiles: SpawnableTiles.None,
 			reputation: -200,
 			makeNoise: true,
-			jumpOver: true
+			jumpOver: true,
+			loot: [{ item: this.itemSnowflakes }]
 		});
 
 		this.creatureCloudling = this.addCreature({
-			name: "Cloudling",
+			name: "cloudling",
+			prefix: "a ",
 			minhp: 4,
 			maxhp: 9,
 			minatk: 2,
@@ -567,12 +580,19 @@ export default class Troposphere extends Mod {
 			moveType: MoveType.Flying,
 			reputation: 100,
 			spawnTiles: SpawnableTiles.None,
-			loot: [{ item: ItemType.Feather }, { item: ItemType.Feather }],
+			loot: [
+				{
+					item: this.itemSnowflakes,
+					chance: 75 
+				},
+				{ item: ItemType.Feather }
+			],
 			lootGroup: LootGroupType.Low
 		});
 
 		this.creatureLightningElemental = this.addCreature({
-			name: "Lightning Elemental",
+			name: "lightning elemental",
+			prefix: "a ",
 			minhp: 30,
 			maxhp: 38,
 			minatk: 11,
@@ -597,7 +617,8 @@ export default class Troposphere extends Mod {
 		});
 
 		this.creatureSprite = this.addCreature({
-			name: "Sprite",
+			name: "sprite",
+			prefix: "a ",
 			minhp: 30,
 			maxhp: 38,
 			minatk: 11,
@@ -637,8 +658,8 @@ export default class Troposphere extends Mod {
 
 	public onGatherRainbow(player: IPlayer, item: IItem | undefined) {
 		const tile = player.getFacingTile();
-		const tileType = Utilities.TileHelpers.getType(tile);
-		if (!item || tileType !== this.terrainRainbow) {
+		const tileDoodad = tile.doodad;
+		if (!tileDoodad || tileDoodad.type !== this.doodadRainbow) {
 			ui.displayMessage(player, this.messageNoRainbow);
 			return;
 		}
@@ -647,14 +668,11 @@ export default class Troposphere extends Mod {
 
 		game.particle.create(player.x + player.direction.x, player.y + player.direction.y, player.z, { r: 12, g: 128, b: 247 });
 
-		const newItem = itemManager.create(this.itemRainbowGlassBottle, player.inventory, item.quality);
-		newItem.decay = item.decay;
-		newItem.minDur = item.minDur;
-		newItem.maxDur = item.maxDur;
+		if (item) {
+			item.changeInto(this.itemRainbowGlassBottle);
+		}
+		doodadManager.remove(tileDoodad);
 
-		itemManager.remove(item);
-
-		game.changeTile({ type: this.terrainCloud }, player.x + player.direction.x, player.y + player.direction.y, player.z, false);
 		game.passTurn(player);
 	}
 

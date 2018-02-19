@@ -11,7 +11,6 @@ export default class Troposphere extends Mod {
     private falling;
     private itemNimbus;
     private itemRainbow;
-    private itemRainbowClayJug;
     private itemRainbowGlassBottle;
     private itemSnowflakes;
     private itemCloudstone;
@@ -20,7 +19,6 @@ export default class Troposphere extends Mod {
     private doodadRainbow;
     private terrainCloudWater;
     private terrainCloud;
-    private terrainRainbow;
     private terrainCloudBoulder;
     private terrainCloudstone;
     private terrainStorm;
