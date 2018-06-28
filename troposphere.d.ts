@@ -1,13 +1,13 @@
 import { ICreature, SpawnGroup } from "creature/ICreature";
-import { ActionType, CreatureType, FacingDirection, IPointZ, ItemType, RenderFlag } from "Enums";
+import { ActionType, CreatureType, Direction, ItemType, RenderFlag } from "Enums";
 import { IItem } from "item/IItem";
 import Mod from "mod/Mod";
 import { IPlayer } from "player/IPlayer";
 import IWorld from "renderer/IWorld";
 import { ITile } from "tile/ITerrain";
+import { IVector2 } from "utilities/math/IVector";
 export default class Troposphere extends Mod {
     private static readonly troposphereZ;
-    private moving;
     private falling;
     private itemNimbus;
     private itemRainbow;
@@ -32,7 +32,6 @@ export default class Troposphere extends Mod {
     private creatureSprite;
     private creaturePool;
     private skillFlying;
-    private hairstyleCloud;
     private messageFlewToTroposphere;
     private messageFlewToTroposphereFailure;
     private messageFlewToLand;
@@ -47,13 +46,6 @@ export default class Troposphere extends Mod {
     onLoad(data: any): void;
     onUnload(): void;
     onSave(): any;
-    onCreateWorld(world: IWorld): void;
-    postGenerateWorld(generateNewWorld: boolean): void;
-    preRenderWorld(tileScale: number, viewWidth: number, viewHeight: number): void;
-    shouldRender(): RenderFlag.Player | undefined;
-    onGameStart(isLoadingSave: boolean): void;
-    onMove(player: IPlayer, nextX: number, nextY: number, tile: ITile, direction: FacingDirection): boolean | undefined;
-    onMoveComplete(player: IPlayer): void;
     initializeItems(): void;
     initializeDoodads(): void;
     initializeTerrain(): void;
@@ -61,11 +53,19 @@ export default class Troposphere extends Mod {
     initializeSkills(): void;
     onNimbus(player: IPlayer, item: IItem | undefined): void;
     onGatherRainbow(player: IPlayer, item: IItem | undefined): void;
+    setFlying(player: IPlayer, flying: boolean, passTurn: boolean): boolean;
+    isFlyableTile(point: IVector2, tile: ITile): boolean;
+    easeInCubic(time: number, start: number, change: number, duration: number): number;
+    onCreateWorld(world: IWorld): void;
+    preLoadWorldDifferences(generateNewWorld: boolean): void;
+    preRenderWorld(tileScale: number, viewWidth: number, viewHeight: number): void;
+    shouldRender(): RenderFlag;
+    onGameStart(isLoadingSave: boolean): void;
+    onMove(player: IPlayer, nextX: number, nextY: number, tile: ITile, direction: Direction): boolean | undefined;
+    onMoveComplete(player: IPlayer): void;
     canConsumeItem(player: IPlayer, itemType: ItemType, actionType: ActionType): boolean | undefined;
     onSpawnCreatureFromGroup(creatureGroup: SpawnGroup, creaturePool: CreatureType[], x: number, y: number, z: number): boolean | undefined;
     canCreatureMove(creature: ICreature, tile?: ITile): boolean | undefined;
     canCreatureAttack(creature: ICreature, enemy: IPlayer | ICreature): boolean | undefined;
     canSeeCreature(creature: ICreature, tile: ITile): boolean | undefined;
-    setFlying(player: IPlayer, flying: boolean, passTurn: boolean): boolean;
-    isFlyableTile(point: IPointZ, tile: ITile): boolean;
 }
