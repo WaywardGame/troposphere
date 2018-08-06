@@ -1,13 +1,17 @@
+import { IActionArgument } from "action/IAction";
 import { ICreature, SpawnGroup } from "creature/ICreature";
 import { ActionType, CreatureType, Direction, ItemType, RenderFlag } from "Enums";
-import { IItem } from "item/IItem";
 import Mod from "mod/Mod";
+import { HelpArticle } from "newui/screen/screens/menu/menus/help/HelpArticleDescriptions";
 import { IPlayer } from "player/IPlayer";
+import { Note } from "player/NoteManager";
 import IWorld from "renderer/IWorld";
 import { ITile } from "tile/ITerrain";
 import { IVector2 } from "utilities/math/IVector";
 export default class Troposphere extends Mod {
     private static readonly troposphereZ;
+    flyingHelpArticle: HelpArticle;
+    flyingNote: Note;
     private falling;
     private itemNimbus;
     private itemRainbow;
@@ -51,8 +55,8 @@ export default class Troposphere extends Mod {
     initializeTerrain(): void;
     initializeCreatures(): void;
     initializeSkills(): void;
-    onNimbus(player: IPlayer, item: IItem | undefined): void;
-    onGatherRainbow(player: IPlayer, item: IItem | undefined): void;
+    onNimbus(player: IPlayer, argument: IActionArgument): void;
+    onGatherRainbow(player: IPlayer, argument: IActionArgument): void;
     setFlying(player: IPlayer, flying: boolean, passTurn: boolean): boolean;
     isFlyableTile(point: IVector2, tile: ITile): boolean;
     easeInCubic(time: number, start: number, change: number, duration: number): number;
@@ -68,4 +72,6 @@ export default class Troposphere extends Mod {
     canCreatureMove(creature: ICreature, tile?: ITile): boolean | undefined;
     canCreatureAttack(creature: ICreature, enemy: IPlayer | ICreature): boolean | undefined;
     canSeeCreature(creature: ICreature, tile: ITile): boolean | undefined;
+    getFogColor(color: [number, number, number]): [number, number, number];
+    isTileBlocked(tile: ITile): boolean;
 }

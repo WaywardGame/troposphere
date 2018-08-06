@@ -1,0 +1,29 @@
+{
+	"extends": "English",
+	"dictionaries": {
+		"note": {
+			"modTroposphereFlying": [
+				"Flying",
+				"The wind rushed {hasHair?through my hair:over my bald head} and my heart raced as my nimbus flew through the clouds. After a few minutes, I arrived in a magical place miles above the ground which I am dubbing the \"troposphere\". At first I was nervous about how the clouds could be holding my weight, but my curiosity and my want of adventure got the better of me. At that point I decided that it's not worth it to dwell on such trivial things.\n\nAlthough the troposphere is beautiful and peaceful at first glance, it is likely a facade. My survival thus far, and the instincts I have accrued, have taught me to prepare for a challenge. I should not underestimate my surroundings: It wasn't long ago that I was losing to giant rats, writing publically about my negative experience, and then having my readers scoff at my ineptitude."
+			]
+		},
+		"helpArticle": {
+			"modTroposphereFlying": [
+				"Flying",
+				"Learn how the nimbus and flight works within the Troposphere mod.",
+				"Learn how to soar up to the clouds with the Troposphere mod!",
+				"Flight is only possible in the Troposphere modification through use of the \"nimbus\", a magical cloud item allowing flight to and from the troposphere layer. You can ascend and descend using the \"Fly\" action available from the {link(Menu.HelpArticle.Actions):item menu} of nimbus items.\n\nThe durability of nimbus items is limited, so make sure to conserve its use or craft new ones using a mixture of feathers, cloudstones, and snowflakes, all of which can be found in the troposphere layer.\n\nBe careful with holes in the clouds. The landing can be painful!"
+			]
+		},
+		"message": {
+			"flewToTroposphere": "You flew to the troposphere.",
+			"flewToTroposphereFailure": "You are unable to fly to the troposphere here as the clouds are too thick.",
+			"flewToLand": "You flew back to land.",
+			"flewToLandFailure": "You are unable to fly to land here as the terrain below is unsuitable for landing.",
+			"fellToLand": "You fell from the troposphere and lost {0} health.",
+			"deathByFalling": "from falling out of the sky",
+			"gatheredRainbow": "You gathered the rainbow.",
+			"noRainbow": "You can only gather rainbows by standing infront of them."
+		}
+	}
+}

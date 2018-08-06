@@ -1,21 +1,24 @@
-import { IActionArgument, IActionResult } from "action/IAction";
+import { IActionArgument } from "action/IAction";
 import { ICreature, SpawnableTiles, SpawnGroup } from "creature/ICreature";
 import { AiType } from "entity/IEntity";
 import { ActionType, CreatureType, DamageType, Defense, Delay, Direction, HairColor, HairStyle, ItemType, LootGroupType, MoveType, RecipeLevel, RenderFlag, Resistances, SfxType, SkillType, SkinColor, StatusType, TerrainType, Vulnerabilities, WorldZ } from "Enums";
-import { IItem } from "item/IItem";
 import { RecipeComponent } from "item/Items";
-import { MessageType } from "language/IMessages";
+import { Message, MessageType } from "language/IMessages";
 import { messages } from "language/Messages";
 import { HookMethod } from "mod/IHookHost";
 import Mod from "mod/Mod";
+import Register, { registry, Registry } from "mod/ModRegistry";
+import { HelpArticle } from "newui/screen/screens/menu/menus/help/HelpArticleDescriptions";
 import { Source } from "player/IMessageManager";
 import { IPlayer } from "player/IPlayer";
+import { Note } from "player/NoteManager";
 import IWorld from "renderer/IWorld";
 import { ITile } from "tile/ITerrain";
 import Terrains from "tile/Terrains";
 import Enums from "utilities/enum/Enums";
 import { IVector2 } from "utilities/math/IVector";
 import Math2 from "utilities/math/Math2";
+import Vector3 from "utilities/math/Vector3";
 import Random from "utilities/Random";
 import TileHelpers from "utilities/TileHelpers";
 
@@ -25,6 +28,17 @@ interface ITroposphereData {
 
 export default class Troposphere extends Mod {
 	private static readonly troposphereZ: number = WorldZ.Max + 1;
+
+	@Register.helpArticle("Flying", {
+		image: true,
+		section: "Troposphere"
+	})
+	public flyingHelpArticle: HelpArticle;
+
+	@Register.note("Flying", {
+		learnMore: registry<Troposphere, HelpArticle>().get("flyingHelpArticle")
+	})
+	public flyingNote: Note;
 
 	private falling: boolean;
 
@@ -56,14 +70,14 @@ export default class Troposphere extends Mod {
 
 	private skillFlying: number;
 
-	private messageFlewToTroposphere: number;
-	private messageFlewToTroposphereFailure: number;
-	private messageFlewToLand: number;
-	private messageFlewToLandFailure: number;
-	private messageFellToLand: number;
-	private messageDeathByFalling: number;
-	private messageGatheredRainbow: number;
-	private messageNoRainbow: number;
+	@Register.message("FlewToTroposphere") private messageFlewToTroposphere: Message;
+	@Register.message("FlewToTroposphereFailure") private messageFlewToTroposphereFailure: Message;
+	@Register.message("FlewToLand") private messageFlewToLand: Message;
+	@Register.message("FlewToLandFailure") private messageFlewToLandFailure: Message;
+	@Register.message("FellToLand") private messageFellToLand: Message;
+	@Register.message("DeathByFalling") private messageDeathByFalling: Message;
+	@Register.message("GatheredRainbow") private messageGatheredRainbow: Message;
+	@Register.message("NoRainbow") private messageNoRainbow: Message;
 
 	private data: ITroposphereData;
 	private firstLoad: boolean;
@@ -85,15 +99,6 @@ export default class Troposphere extends Mod {
 		this.initializeItems();
 		this.initializeTerrain();
 		this.initializeCreatures();
-
-		this.messageFlewToTroposphere = this.addMessage("FlewToTroposphere", "You flew to the Troposphere.");
-		this.messageFlewToTroposphereFailure = this.addMessage("FlewToTroposphereFailure", "You are unable to fly to the Troposphere. Try flying from another spot.");
-		this.messageFlewToLand = this.addMessage("FlewToLand", "You flew back to land.");
-		this.messageFlewToLandFailure = this.addMessage("FlewToLandFailure", "You are unable to fly back to land. Try flying from another spot.");
-		this.messageFellToLand = this.addMessage("FellToLand", "You fell from the Troposphere. Ouch.");
-		this.messageDeathByFalling = this.addMessage("DeathByFalling", "from falling out of the sky");
-		this.messageGatheredRainbow = this.addMessage("GatheredRainbow", "You gathered the rainbow.");
-		this.messageNoRainbow = this.addMessage("NoRainbow", "You can only gather rainbows by standing infront of them.");
 	}
 
 	public onUnload(): void {
@@ -111,16 +116,6 @@ export default class Troposphere extends Mod {
 	// Utility Methods
 
 	public initializeItems() {
-		const actionTypeFly = this.addActionType({
-			name: "Fly",
-			description: "Fly to and from the Troposphere."
-		}, (player: IPlayer, argument: IActionArgument, result: IActionResult) => this.onNimbus(player, argument.item));
-
-		const actionTypeGatherRainbow = this.addActionType({
-			name: "Gather Rainbow",
-			description: "Gather a rainbow with a container."
-		}, (player: IPlayer, argument: IActionArgument, result: IActionResult) => this.onGatherRainbow(player, argument.item));
-
 		this.itemRainbow = this.addItem({
 			description: "A magical rainbow.",
 			name: "rainbow",
@@ -157,8 +152,8 @@ export default class Troposphere extends Mod {
 		this.itemNimbus = this.addItem({
 			description: "The flying nimbus.",
 			name: "nimbus",
-			prefix: "a ",
-			use: [actionTypeFly],
+			prefix: "the ",
+			use: [Registry.id(this.onNimbus)],
 			recipe: {
 				components: [
 					RecipeComponent(ItemType.Feather, 2, 2, 2),
@@ -174,7 +169,7 @@ export default class Troposphere extends Mod {
 
 		const glassBottle = this.getItemByType(ItemType.GlassBottle);
 		if (glassBottle && glassBottle.use) {
-			glassBottle.use.push(actionTypeGatherRainbow);
+			glassBottle.use.push(Registry.id(this.onGatherRainbow));
 		}
 	}
 
@@ -351,20 +346,20 @@ export default class Troposphere extends Mod {
 				chance: 50
 			}]
 		}, {
-			resource: [
-				{ item: ItemType.Cotton },
-				{ item: ItemType.AnimalClaw },
-				{ item: ItemType.AnimalFat },
-				{ item: ItemType.RawMeat },
-				{ item: ItemType.RawMeat },
-				{ item: ItemType.AnimalSkull },
-				{ item: ItemType.Offal },
-				{ item: ItemType.Bone },
-				{ item: ItemType.BoneFragments }
-			],
-			decay: 2800,
-			skill: SkillType.Anatomy
-		});
+				resource: [
+					{ item: ItemType.Cotton },
+					{ item: ItemType.AnimalClaw },
+					{ item: ItemType.AnimalFat },
+					{ item: ItemType.RawMeat },
+					{ item: ItemType.RawMeat },
+					{ item: ItemType.AnimalSkull },
+					{ item: ItemType.Offal },
+					{ item: ItemType.Bone },
+					{ item: ItemType.BoneFragments }
+				],
+				decay: 2800,
+				skill: SkillType.Anatomy
+			});
 
 		this.creatureRabbit = this.addCreature({
 			name: "cloud rabbit",
@@ -386,15 +381,15 @@ export default class Troposphere extends Mod {
 			jumpOver: true,
 			loot: [{ item: this.itemSnowflakes }]
 		}, {
-			resource: [
-				{ item: ItemType.Cotton },
-				{ item: ItemType.RawMeat },
-				{ item: ItemType.Offal },
-				{ item: ItemType.BoneFragments }
-			],
-			decay: 2400,
-			skill: SkillType.Anatomy
-		});
+				resource: [
+					{ item: ItemType.Cotton },
+					{ item: ItemType.RawMeat },
+					{ item: ItemType.Offal },
+					{ item: ItemType.BoneFragments }
+				],
+				decay: 2400,
+				skill: SkillType.Anatomy
+			});
 
 		this.creatureCloudling = this.addCreature({
 			name: "cloudling",
@@ -425,16 +420,16 @@ export default class Troposphere extends Mod {
 			],
 			lootGroup: LootGroupType.Low
 		}, {
-			resource: [
-				{ item: ItemType.Feather },
-				{ item: ItemType.Feather },
-				{ item: ItemType.TailFeathers, chance: 1 },
-				{ item: ItemType.RawChicken },
-				{ item: ItemType.BoneFragments }
-			],
-			decay: 2400,
-			skill: SkillType.Anatomy
-		});
+				resource: [
+					{ item: ItemType.Feather },
+					{ item: ItemType.Feather },
+					{ item: ItemType.TailFeathers, chance: 1 },
+					{ item: ItemType.RawChicken },
+					{ item: ItemType.BoneFragments }
+				],
+				decay: 2400,
+				skill: SkillType.Anatomy
+			});
 
 		this.creatureLightningElemental = this.addCreature({
 			name: "lightning elemental",
@@ -462,12 +457,12 @@ export default class Troposphere extends Mod {
 			reputation: 300,
 			makeNoise: true
 		}, {
-			resource: [{ item: ItemType.PileOfAsh }],
-			decay: 400,
-			skill: SkillType.Mining,
-			name: "fulgurite",
-			prefix: "a "
-		});
+				resource: [{ item: ItemType.PileOfAsh }],
+				decay: 400,
+				skill: SkillType.Mining,
+				name: "fulgurite",
+				prefix: "a "
+			});
 
 		this.creatureSprite = this.addCreature({
 			name: "sprite",
@@ -493,12 +488,12 @@ export default class Troposphere extends Mod {
 			reputation: 500,
 			makeNoise: true
 		}, {
-			resource: [{ item: ItemType.Ectoplasm }],
-			decay: 100,
-			blood: false,
-			name: "ethereal mist",
-			prefix: ""
-		});
+				resource: [{ item: ItemType.Ectoplasm }],
+				decay: 100,
+				blood: false,
+				name: "ethereal mist",
+				prefix: ""
+			});
 
 		this.creaturePool = [this.creatureBear, this.creatureRabbit, this.creatureCloudling, this.creatureLightningElemental];
 	}
@@ -510,11 +505,22 @@ export default class Troposphere extends Mod {
 		});
 	}
 
-	public onNimbus(player: IPlayer, item: IItem | undefined) {
+	@Register.action({
+		name: "Fly",
+		description: "Fly to and from the Troposphere."
+	})
+	public onNimbus(player: IPlayer, argument: IActionArgument) {
 		this.setFlying(player, player.z !== Troposphere.troposphereZ, true);
+		if (argument.item) {
+			argument.item.damage(argument.type!.toString());
+		}
 	}
 
-	public onGatherRainbow(player: IPlayer, item: IItem | undefined) {
+	@Register.action({
+		name: "Gather Rainbow",
+		description: "Gather a rainbow with a container."
+	})
+	public onGatherRainbow(player: IPlayer, argument: IActionArgument) {
 		const tile = player.getFacingTile();
 		const tileDoodad = tile.doodad;
 		if (!tileDoodad || tileDoodad.type !== this.doodadRainbow) {
@@ -528,8 +534,8 @@ export default class Troposphere extends Mod {
 
 		game.particle.create(player.x + player.direction.x, player.y + player.direction.y, player.z, { r: 12, g: 128, b: 247 });
 
-		if (item) {
-			item.changeInto(this.itemRainbowGlassBottle);
+		if (argument.item) {
+			argument.item.changeInto(this.itemRainbowGlassBottle);
 		}
 
 		doodadManager.remove(tileDoodad);
@@ -557,6 +563,10 @@ export default class Troposphere extends Mod {
 		player.raft = undefined;
 
 		player.skillGain(this.skillFlying);
+
+		player.notes.write(this.flyingNote, {
+			hasHair: localPlayer.customization.hairStyle !== "None"
+		});
 
 		if (passTurn) {
 			player.messages.source(Source.Action, Source.Item)
@@ -779,22 +789,30 @@ export default class Troposphere extends Mod {
 			this.falling = false;
 			this.setFlying(player, false, false);
 
-			// fall damage
-			player.messages.source(Source.Wellbeing)
-				.type(MessageType.Bad)
-				.send(this.messageFellToLand);
+			let damage = -40;
 
 			const flyingSkill = player.skills[this.skillFlying];
-			const damagePercentage = flyingSkill ? 1 - (flyingSkill.percent / 100) : 1;
+			damage *= flyingSkill ? 1 - (flyingSkill.percent / 100) : 1;
 
 			const tile = game.getTile(player.x, player.y, player.z);
 			const terrainType = TileHelpers.getType(tile);
-			if (tileAtlas.isWater(terrainType)) {
-				player.damage(-30 * damagePercentage, messages[this.messageDeathByFalling]);
 
-			} else {
-				player.damage(-40 * damagePercentage, messages[this.messageDeathByFalling]);
-				corpseManager.create(CreatureType.Blood, player.x, player.y, player.z);
+			if (terrainType === TerrainType.DeepFreshWater || terrainType === TerrainType.DeepSeawater) {
+				damage *= .5;
+
+			} else if (terrainType === TerrainType.FreshWater || terrainType === TerrainType.Seawater) {
+				damage *= .75;
+			}
+
+			damage = player.damage(damage, messages[this.messageDeathByFalling]);
+
+			// fall damage
+			player.messages.source(Source.Wellbeing)
+				.type(MessageType.Bad)
+				.send(this.messageFellToLand, damage);
+
+			if (damage > 25 || damage > 15 && Random.chance(.5)) {
+				corpseManager.create(tileAtlas.isWater(terrainType) ? CreatureType.WaterBlood : CreatureType.Blood, player.x, player.y, player.z);
 			}
 
 			player.addDelay(Delay.Collision, true);
@@ -861,5 +879,26 @@ export default class Troposphere extends Mod {
 		creatureObj.nextVisibleCount--;
 
 		return false;
+	}
+
+	@HookMethod
+	public getFogColor(color: [number, number, number]): [number, number, number] {
+		if (localPlayer.z === Troposphere.troposphereZ) {
+			const ambientLightLevel = game.getAmbientLightLevel(localPlayer.z);
+			const ambientLightColor = new Vector3(renderer.getAmbientColor());
+			if (ambientLightLevel > 0.5) {
+				return Vector3.mix(ambientLightColor, Vector3.ONE, ambientLightLevel * 2 - 1).xyz;
+
+			} else {
+				return Vector3.mix(Vector3.ZERO, ambientLightColor, ambientLightLevel * 2).xyz;
+			}
+		}
+
+		return color;
+	}
+
+	@HookMethod
+	public isTileBlocked(tile: ITile) {
+		return TileHelpers.getType(tile) === this.terrainHole;
 	}
 }
