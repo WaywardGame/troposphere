@@ -16,14 +16,14 @@
 			]
 		},
 		"message": {
-			"flewToTroposphere": "You flew to the troposphere.",
-			"flewToTroposphereFailure": "You are unable to fly to the troposphere here as the clouds are too thick.",
-			"flewToLand": "You flew back to land.",
-			"flewToLandFailure": "You are unable to fly to land here as the terrain below is unsuitable for landing.",
-			"fellToLand": "You fell from the troposphere and lost {0} health.",
-			"deathByFalling": "from falling out of the sky",
-			"gatheredRainbow": "You gathered the rainbow.",
-			"noRainbow": "You can only gather rainbows by standing infront of them."
+			"modTroposphereFlewToTroposphere": "You flew to the troposphere.",
+			"modTroposphereFlewToTroposphereFailure": "You are unable to fly to the troposphere here as the clouds are too thick.",
+			"modTroposphereFlewToLand": "You flew back to land.",
+			"modTroposphereFlewToLandFailure": "You are unable to fly to land here as the terrain below is unsuitable for landing.",
+			"modTroposphereFellToLand": "You fell from the troposphere and lost {0} health.",
+			"modTroposphereDeathByFalling": "from falling out of the sky",
+			"modTroposphereGatheredRainbow": "You gathered the rainbow.",
+			"modTroposphereNoRainbow": "You can only gather rainbows by standing infront of them."
 		}
 	}
 }

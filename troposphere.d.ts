@@ -1,6 +1,7 @@
 import { IActionArgument } from "action/IAction";
 import { ICreature, SpawnGroup } from "creature/ICreature";
 import { ActionType, CreatureType, Direction, ItemType, RenderFlag } from "Enums";
+import { Message } from "language/IMessages";
 import Mod from "mod/Mod";
 import { HelpArticle } from "newui/screen/screens/menu/menus/help/HelpArticleDescriptions";
 import { IPlayer } from "player/IPlayer";
@@ -10,8 +11,16 @@ import { ITile } from "tile/ITerrain";
 import { IVector2 } from "utilities/math/IVector";
 export default class Troposphere extends Mod {
     private static readonly troposphereZ;
-    flyingHelpArticle: HelpArticle;
-    flyingNote: Note;
+    readonly flyingHelpArticle: HelpArticle;
+    readonly flyingNote: Note;
+    readonly messageFlewToTroposphere: Message;
+    readonly messageFlewToTroposphereFailure: Message;
+    readonly messageFlewToLand: Message;
+    readonly messageFlewToLandFailure: Message;
+    readonly messageFellToLand: Message;
+    readonly messageDeathByFalling: Message;
+    readonly messageGatheredRainbow: Message;
+    readonly messageNoRainbow: Message;
     private falling;
     private itemNimbus;
     private itemRainbow;
@@ -36,17 +45,8 @@ export default class Troposphere extends Mod {
     private creatureSprite;
     private creaturePool;
     private skillFlying;
-    private messageFlewToTroposphere;
-    private messageFlewToTroposphereFailure;
-    private messageFlewToLand;
-    private messageFlewToLandFailure;
-    private messageFellToLand;
-    private messageDeathByFalling;
-    private messageGatheredRainbow;
-    private messageNoRainbow;
     private data;
     private firstLoad;
-    onInitialize(saveDataGlobal: any): any;
     onLoad(data: any): void;
     onUnload(): void;
     onSave(): any;
@@ -65,6 +65,7 @@ export default class Troposphere extends Mod {
     preRenderWorld(tileScale: number, viewWidth: number, viewHeight: number): void;
     shouldRender(): RenderFlag;
     onGameStart(isLoadingSave: boolean): void;
+    onPlayerJoin(player: IPlayer): void;
     onMove(player: IPlayer, nextX: number, nextY: number, tile: ITile, direction: Direction): boolean | undefined;
     onMoveComplete(player: IPlayer): void;
     canConsumeItem(player: IPlayer, itemType: ItemType, actionType: ActionType): boolean | undefined;
@@ -72,6 +73,6 @@ export default class Troposphere extends Mod {
     canCreatureMove(creature: ICreature, tile?: ITile): boolean | undefined;
     canCreatureAttack(creature: ICreature, enemy: IPlayer | ICreature): boolean | undefined;
     canSeeCreature(creature: ICreature, tile: ITile): boolean | undefined;
-    getFogColor(color: [number, number, number]): [number, number, number];
-    isTileBlocked(tile: ITile): boolean;
+    getFogColor(): [number, number, number];
+    getTilePenalty(penalty: number, tile: ITile): number;
 }

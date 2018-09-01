@@ -7,7 +7,7 @@ import { Message, MessageType } from "language/IMessages";
 import { messages } from "language/Messages";
 import { HookMethod } from "mod/IHookHost";
 import Mod from "mod/Mod";
-import Register, { registry, Registry } from "mod/ModRegistry";
+import Register, { Registry } from "mod/ModRegistry";
 import { HelpArticle } from "newui/screen/screens/menu/menus/help/HelpArticleDescriptions";
 import { Source } from "player/IMessageManager";
 import { IPlayer } from "player/IPlayer";
@@ -17,7 +17,7 @@ import { ITile } from "tile/ITerrain";
 import Terrains from "tile/Terrains";
 import Enums from "utilities/enum/Enums";
 import { IVector2 } from "utilities/math/IVector";
-import Math2 from "utilities/math/Math2";
+import Vector2 from "utilities/math/Vector2";
 import Vector3 from "utilities/math/Vector3";
 import Random from "utilities/Random";
 import TileHelpers from "utilities/TileHelpers";
@@ -33,12 +33,29 @@ export default class Troposphere extends Mod {
 		image: true,
 		section: "Troposphere"
 	})
-	public flyingHelpArticle: HelpArticle;
+	public readonly flyingHelpArticle: HelpArticle;
 
 	@Register.note("Flying", {
-		learnMore: registry<Troposphere, HelpArticle>().get("flyingHelpArticle")
+		learnMore: Registry<Troposphere, HelpArticle>().get("flyingHelpArticle")
 	})
-	public flyingNote: Note;
+	public readonly flyingNote: Note;
+
+	@Register.message("FlewToTroposphere")
+	public readonly messageFlewToTroposphere: Message;
+	@Register.message("FlewToTroposphereFailure")
+	public readonly messageFlewToTroposphereFailure: Message;
+	@Register.message("FlewToLand")
+	public readonly messageFlewToLand: Message;
+	@Register.message("FlewToLandFailure")
+	public readonly messageFlewToLandFailure: Message;
+	@Register.message("FellToLand")
+	public readonly messageFellToLand: Message;
+	@Register.message("DeathByFalling")
+	public readonly messageDeathByFalling: Message;
+	@Register.message("GatheredRainbow")
+	public readonly messageGatheredRainbow: Message;
+	@Register.message("NoRainbow")
+	public readonly messageNoRainbow: Message;
 
 	private falling: boolean;
 
@@ -70,19 +87,8 @@ export default class Troposphere extends Mod {
 
 	private skillFlying: number;
 
-	@Register.message("FlewToTroposphere") private messageFlewToTroposphere: Message;
-	@Register.message("FlewToTroposphereFailure") private messageFlewToTroposphereFailure: Message;
-	@Register.message("FlewToLand") private messageFlewToLand: Message;
-	@Register.message("FlewToLandFailure") private messageFlewToLandFailure: Message;
-	@Register.message("FellToLand") private messageFellToLand: Message;
-	@Register.message("DeathByFalling") private messageDeathByFalling: Message;
-	@Register.message("GatheredRainbow") private messageGatheredRainbow: Message;
-	@Register.message("NoRainbow") private messageNoRainbow: Message;
-
 	private data: ITroposphereData;
 	private firstLoad: boolean;
-
-	public onInitialize(saveDataGlobal: any): any { }
 
 	public onLoad(data: any): void {
 		this.data = data;
@@ -164,7 +170,8 @@ export default class Troposphere extends Mod {
 				level: RecipeLevel.Simple,
 				reputation: 50
 			},
-			disassemble: true
+			disassemble: true,
+			durability: 15
 		});
 
 		const glassBottle = this.getItemByType(ItemType.GlassBottle);
@@ -550,7 +557,8 @@ export default class Troposphere extends Mod {
 		if (openTile === undefined || player.z === WorldZ.Cave) {
 			if (passTurn) {
 				player.messages.source(Source.Action)
-					.send(flying ? this.messageFlewToTroposphereFailure : this.messageFlewToLandFailure, MessageType.Bad);
+					.type(MessageType.Bad)
+					.send(flying ? this.messageFlewToTroposphereFailure : this.messageFlewToLandFailure);
 			}
 
 			return false;
@@ -565,12 +573,13 @@ export default class Troposphere extends Mod {
 		player.skillGain(this.skillFlying);
 
 		player.notes.write(this.flyingNote, {
-			hasHair: localPlayer.customization.hairStyle !== "None"
+			hasHair: player.customization.hairStyle !== "None"
 		});
 
 		if (passTurn) {
 			player.messages.source(Source.Action, Source.Item)
-				.send(flying ? this.messageFlewToTroposphere : this.messageFlewToLand, MessageType.Good);
+				.type(MessageType.Good)
+				.send(flying ? this.messageFlewToTroposphere : this.messageFlewToLand);
 
 			game.passTurn(player);
 		}
@@ -740,10 +749,16 @@ export default class Troposphere extends Mod {
 			tileScale *= 0.25;
 		}
 
-		const scrollX = Math2.lerp(localPlayer.fromX, localPlayer.x, localPlayer.movementProgress);
-		const scrollY = Math2.lerp(localPlayer.fromY, localPlayer.y, localPlayer.movementProgress);
+		let position = new Vector2(localPlayer.fromX, localPlayer.fromY)
+			.lerp(localPlayer, localPlayer.movementProgress);
 
-		renderer.layers[WorldZ.Overworld].renderFullbright(scrollX, scrollY, tileScale, viewWidth, viewHeight, false);
+		const scale = 16 * renderer.getZoom() * 0.25;
+		position = new Vector2(position)
+			.multiply(scale)
+			.floor()
+			.divide(scale);
+
+		renderer.layers[WorldZ.Overworld].renderFullbright(position.x, position.y, tileScale, viewWidth, viewHeight, false);
 	}
 
 	@HookMethod
@@ -755,9 +770,17 @@ export default class Troposphere extends Mod {
 
 	@HookMethod
 	public onGameStart(isLoadingSave: boolean): void {
-		if (!isLoadingSave || this.firstLoad) {
+		if ((!isLoadingSave || this.firstLoad) && !multiplayer.isConnected()) {
 			// give nimbus
 			localPlayer.createItemInInventory(this.itemNimbus);
+		}
+	}
+
+	@HookMethod
+	public onPlayerJoin(player: IPlayer): void {
+		if (itemManager.getItemInContainer(player.inventory, this.itemNimbus) === undefined) {
+			// give nimbus if they don't have one
+			player.createItemInInventory(this.itemNimbus);
 		}
 	}
 
@@ -882,7 +905,7 @@ export default class Troposphere extends Mod {
 	}
 
 	@HookMethod
-	public getFogColor(color: [number, number, number]): [number, number, number] {
+	public getFogColor() {
 		if (localPlayer.z === Troposphere.troposphereZ) {
 			const ambientLightLevel = game.getAmbientLightLevel(localPlayer.z);
 			const ambientLightColor = new Vector3(renderer.getAmbientColor());
@@ -894,11 +917,15 @@ export default class Troposphere extends Mod {
 			}
 		}
 
-		return color;
+		return undefined;
 	}
 
 	@HookMethod
-	public isTileBlocked(tile: ITile) {
-		return TileHelpers.getType(tile) === this.terrainHole;
+	public getTilePenalty(penalty: number, tile: ITile) {
+		if (TileHelpers.getType(tile) === this.terrainHole) {
+			penalty += 1000;
+		}
+
+		return penalty;
 	}
 }
