@@ -1,7 +1,7 @@
 import { IActionArgument } from "action/IAction";
 import { ICreature, SpawnableTiles, SpawnGroup } from "creature/ICreature";
 import { AiType } from "entity/IEntity";
-import { ActionType, CreatureType, DamageType, Defense, Delay, Direction, HairColor, HairStyle, ItemType, LootGroupType, MoveType, RecipeLevel, RenderFlag, Resistances, SfxType, SkillType, SkinColor, StatusType, TerrainType, Vulnerabilities, WorldZ } from "Enums";
+import { ActionType, CreatureType, DamageType, Defense, Delay, Direction, HairColor, HairStyle, ItemType, LootGroupType, MoveType, PlayerState, RecipeLevel, RenderFlag, Resistances, SfxType, SkillType, SkinColor, StatusType, TerrainType, Vulnerabilities, WorldZ } from "Enums";
 import { RecipeComponent } from "item/Items";
 import { Message, MessageType } from "language/IMessages";
 import { messages } from "language/Messages";
@@ -202,15 +202,6 @@ export default class Troposphere extends Mod {
 	}
 
 	public initializeTerrain() {
-		this.terrainCloudWater = this.addTerrain({
-			name: "cloud water",
-			passable: true,
-			shallowWater: true,
-			particles: { r: 47, g: 128, b: 157 },
-			freshWater: true,
-			noBackground: true
-		});
-
 		this.terrainCloud = this.addTerrain({
 			name: "clouds",
 			passable: true,
@@ -322,6 +313,16 @@ export default class Troposphere extends Mod {
 			passable: true,
 			particles: { r: 250, g: 250, b: 250 },
 			noBackground: true
+		});
+
+		this.terrainCloudWater = this.addTerrain({
+			name: "cloud water",
+			passable: true,
+			shallowWater: true,
+			particles: { r: 47, g: 128, b: 157 },
+			freshWater: true,
+			noBackground: true,
+			tileOnConsume: this.terrainHole
 		});
 	}
 
@@ -812,30 +813,32 @@ export default class Troposphere extends Mod {
 			this.falling = false;
 			this.setFlying(player, false, false);
 
-			let damage = -40;
+			if (player.state !== PlayerState.Ghost) {
+				let damage = -40;
 
-			const flyingSkill = player.skills[this.skillFlying];
-			damage *= flyingSkill ? 1 - (flyingSkill.percent / 100) : 1;
-
-			const tile = game.getTile(player.x, player.y, player.z);
-			const terrainType = TileHelpers.getType(tile);
-
-			if (terrainType === TerrainType.DeepFreshWater || terrainType === TerrainType.DeepSeawater) {
-				damage *= .5;
-
-			} else if (terrainType === TerrainType.FreshWater || terrainType === TerrainType.Seawater) {
-				damage *= .75;
-			}
-
-			damage = player.damage(damage, messages[this.messageDeathByFalling]);
-
-			// fall damage
-			player.messages.source(Source.Wellbeing)
-				.type(MessageType.Bad)
-				.send(this.messageFellToLand, damage);
-
-			if (damage > 25 || damage > 15 && Random.chance(.5)) {
-				corpseManager.create(tileAtlas.isWater(terrainType) ? CreatureType.WaterBlood : CreatureType.Blood, player.x, player.y, player.z);
+				const flyingSkill = player.skills[this.skillFlying];
+				damage *= flyingSkill ? 1 - (flyingSkill.percent / 100) : 1;
+	
+				const tile = game.getTile(player.x, player.y, player.z);
+				const terrainType = TileHelpers.getType(tile);
+	
+				if (terrainType === TerrainType.DeepFreshWater || terrainType === TerrainType.DeepSeawater) {
+					damage *= .5;
+	
+				} else if (terrainType === TerrainType.FreshWater || terrainType === TerrainType.Seawater) {
+					damage *= .75;
+				}
+	
+				damage = player.damage(damage, messages[this.messageDeathByFalling]);
+	
+				// fall damage
+				player.messages.source(Source.Wellbeing)
+					.type(MessageType.Bad)
+					.send(this.messageFellToLand, damage);
+	
+				if (damage > 25 || damage > 15 && Random.chance(.5)) {
+					corpseManager.create(tileAtlas.isWater(terrainType) ? CreatureType.WaterBlood : CreatureType.Blood, player.x, player.y, player.z);
+				}
 			}
 
 			player.addDelay(Delay.Collision, true);
