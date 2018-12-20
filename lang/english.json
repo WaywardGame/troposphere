@@ -24,6 +24,46 @@
 			"modTroposphereDeathByFalling": "from falling out of the sky",
 			"modTroposphereGatheredRainbow": "You gathered the rainbow.",
 			"modTroposphereNoRainbow": "You can only gather rainbows by standing infront of them."
+		},
+		"item": {
+			"modTroposphereNimbus": ["nimbus", "The flying nimbus."],
+			"modTroposphereRainbow": ["rainbow", "A magical rainbow."],
+			"modTroposphereRainbowGlassBottle": ["glass bottle filled with a rainbow", "A magical rainbow in a glass bottle."],
+			"modTroposphereSnowflakes": ["snowflakes", "A couple of snowflakes"],
+			"modTroposphereCloudstone": ["cloudstone", "A cloudstone."]
+		},
+		"doodad": {
+			"modTroposphereCloudBoulder": "cloud boulder",
+			"modTroposphereStormBoulder": "storm boulder",
+			"modTroposphereRainbow": "rainbow"
+		},
+		"terrain": {
+			"modTroposphereClouds": "clouds",
+			"modTroposphereCloudWater": "cloud water",
+			"modTroposphereCloudBoulder": "cloud boulder",
+			"modTroposphereCloudstone": "cloudstone",
+			"modTroposphereStorm": "storm",
+			"modTroposphereStormBoulder": "storm boulder",
+			"modTroposphereStormstone": "stormstone",
+			"modTroposphereHole": "hole"
+		},
+		"creature": {
+			"modTroposphereCloudBear": "cloud bear",
+			"modTroposphereCloudRabbit": "cloud rabbit",
+			"modTroposphereCloudling": "cloudling",
+			"modTroposphereLightningElemental": "lightning elemental",
+			"modTroposphereSprite": "sprite"
+		},
+		"corpse": {
+			"modTroposphereLightningElemental": "fulgurite",
+			"modTroposphereSprite": "ethereal mist"
+		},
+		"skill": {
+			"modTroposphereFlying": ["flying", "Increases your damage resistance when falling from the Troposphere."]
+		},
+		"action": {
+			"modTroposphereFly": ["Fly", "Fly to and from the Troposphere."],
+			"modTroposphereGatherRainbow": ["Gather Rainbow", "Gather a rainbow with a container."]
 		}
 	}
 }

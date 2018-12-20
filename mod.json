@@ -4,11 +4,16 @@
 	"version": "1.3.2",
 	"author": "Spacetech",
 	"compatibleMinorVersions": [
-		6
+		7
 	],
 	"file": "Troposphere.js",
 	"languages": [
 		"lang/english"
+	],
+	"tags": [
+		"Item",
+		"Doodad",
+		"Terrain"
 	],
 	"publishedFileId": "474819705"
 }

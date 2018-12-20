@@ -4,393 +4,32 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-define(["require", "exports", "creature/ICreature", "entity/IEntity", "Enums", "item/Items", "language/IMessages", "language/Messages", "mod/IHookHost", "mod/Mod", "mod/ModRegistry", "player/IMessageManager", "tile/Terrains", "utilities/enum/Enums", "utilities/math/Vector2", "utilities/math/Vector3", "utilities/Random", "utilities/TileHelpers"], function (require, exports, ICreature_1, IEntity_1, Enums_1, Items_1, IMessages_1, Messages_1, IHookHost_1, Mod_1, ModRegistry_1, IMessageManager_1, Terrains_1, Enums_2, Vector2_1, Vector3_1, Random_1, TileHelpers_1) {
+define(["require", "exports", "action/Action", "action/IAction", "creature/ICreature", "entity/IEntity", "Enums", "item/Items", "mod/IHookHost", "mod/Mod", "mod/ModRegistry", "player/IMessageManager", "player/MessageManager", "tile/Terrains", "utilities/enum/Enums", "utilities/math/Vector2", "utilities/math/Vector3", "utilities/Random", "utilities/TileHelpers"], function (require, exports, Action_1, IAction_1, ICreature_1, IEntity_1, Enums_1, Items_1, IHookHost_1, Mod_1, ModRegistry_1, IMessageManager_1, MessageManager_1, Terrains_1, Enums_2, Vector2_1, Vector3_1, Random_1, TileHelpers_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     class Troposphere extends Mod_1.default {
-        onLoad(data) {
-            this.data = data;
-            this.firstLoad = !this.data;
-            if (this.firstLoad) {
-                this.data = {
-                    seed: new Date().getTime()
-                };
+        constructor() {
+            super(...arguments);
+            this.firstLoad = true;
+        }
+        get creaturePool() {
+            return [this.creatureBear, this.creatureRabbit, this.creatureCloudling, this.creatureLightningElemental];
+        }
+        initializeSaveData(data) {
+            if (data) {
+                this.firstLoad = false;
+                return data;
             }
-            this.initializeSkills();
-            this.initializeDoodads();
-            this.initializeItems();
-            this.initializeTerrain();
-            this.initializeCreatures();
+            this.firstLoad = true;
+            return {
+                seed: new Date().getTime()
+            };
         }
         onUnload() {
-            const glassBottle = this.getItemByType(Enums_1.ItemType.GlassBottle);
+            const glassBottle = Items_1.itemDescriptions[Enums_1.ItemType.GlassBottle];
             if (glassBottle && glassBottle.use) {
                 glassBottle.use.pop();
             }
-        }
-        onSave() {
-            return this.data;
-        }
-        initializeItems() {
-            this.itemRainbow = this.addItem({
-                description: "A magical rainbow.",
-                name: "rainbow",
-                prefix: "a ",
-                weight: 0.1,
-                use: [Enums_1.ActionType.DrinkItem, Enums_1.ActionType.Build],
-                onUse: {
-                    [Enums_1.ActionType.Build]: this.doodadRainbow
-                }
-            });
-            this.itemRainbowGlassBottle = this.addItem({
-                description: "A magical rainbow in a glass bottle.",
-                name: "glass bottle filled with a rainbow",
-                prefix: "a ",
-                weight: 1.0,
-                use: [Enums_1.ActionType.DrinkItem],
-                returnOnUse: [Enums_1.ItemType.GlassBottle, false]
-            });
-            this.itemSnowflakes = this.addItem({
-                description: "A couple of snowflakes.",
-                name: "snowflakes",
-                weight: 0.1
-            });
-            this.itemCloudstone = this.addItem({
-                description: "A cloudstone.",
-                name: "cloudstone",
-                prefix: "a ",
-                weight: 1
-            });
-            this.itemNimbus = this.addItem({
-                description: "The flying nimbus.",
-                name: "nimbus",
-                prefix: "the ",
-                use: [ModRegistry_1.Registry.id(this.onNimbus)],
-                recipe: {
-                    components: [
-                        Items_1.RecipeComponent(Enums_1.ItemType.Feather, 2, 2, 2),
-                        Items_1.RecipeComponent(this.itemCloudstone, 1, 1, 1),
-                        Items_1.RecipeComponent(this.itemSnowflakes, 1, 1, 1)
-                    ],
-                    skill: this.skillFlying,
-                    level: Enums_1.RecipeLevel.Simple,
-                    reputation: 50
-                },
-                disassemble: true,
-                durability: 15
-            });
-            const glassBottle = this.getItemByType(Enums_1.ItemType.GlassBottle);
-            if (glassBottle && glassBottle.use) {
-                glassBottle.use.push(ModRegistry_1.Registry.id(this.onGatherRainbow));
-            }
-        }
-        initializeDoodads() {
-            this.doodadCloudBoulder = this.addDoodad({
-                name: "cloud boulder",
-                prefix: "a ",
-                particles: { r: 176, g: 153, b: 134 }
-            });
-            this.doodadStormBoulder = this.addDoodad({
-                name: "storm boulder",
-                prefix: "a ",
-                particles: { r: 176, g: 153, b: 134 }
-            });
-            this.doodadRainbow = this.addDoodad({
-                name: "rainbow",
-                prefix: "a ",
-                particles: { r: 176, g: 153, b: 134 },
-                blockMove: true
-            });
-        }
-        initializeTerrain() {
-            this.terrainCloud = this.addTerrain({
-                name: "clouds",
-                passable: true,
-                particles: { r: 250, g: 250, b: 250 },
-                noBackground: true
-            });
-            this.terrainCloudBoulder = this.addTerrain({
-                name: "cloud boulder",
-                prefix: "a ",
-                particles: { r: 250, g: 250, b: 250 },
-                gatherSkillUse: Enums_1.SkillType.Lumberjacking,
-                gather: true,
-                noLos: true,
-                sound: Enums_1.SfxType.TreeHit,
-                leftOver: this.terrainCloudWater,
-                noGfxSwitch: true,
-                noBackground: true,
-                doodad: this.doodadCloudBoulder
-            }, this.terrainCloud);
-            this.addTerrainResource(this.terrainCloudBoulder, [
-                { type: this.itemCloudstone }
-            ]);
-            this.terrainCloudstone = this.addTerrain({
-                name: "cloudstone",
-                particles: { r: 250, g: 250, b: 250 },
-                gatherSkillUse: Enums_1.SkillType.Mining,
-                gather: true,
-                noLos: true,
-                sound: Enums_1.SfxType.RockHit,
-                leftOver: this.terrainCloud,
-                noGfxSwitch: true,
-                isMountain: true,
-                noBackground: true
-            });
-            this.addTerrainResource(this.terrainCloudstone, [
-                { type: this.itemCloudstone },
-                { type: this.itemCloudstone },
-                { type: this.itemCloudstone },
-                { type: this.itemCloudstone },
-                { type: this.itemCloudstone },
-                { type: this.itemCloudstone },
-                { type: this.itemCloudstone, chance: 45 },
-                { type: this.itemCloudstone }
-            ]);
-            this.terrainStorm = this.addTerrain({
-                name: "storm",
-                prefix: "a ",
-                passable: true,
-                particles: { r: 20, g: 20, b: 20 },
-                noBackground: true
-            });
-            this.terrainStormBoulder = this.addTerrain({
-                name: "storm boulder",
-                prefix: "a ",
-                particles: { r: 20, g: 20, b: 20 },
-                gatherSkillUse: Enums_1.SkillType.Lumberjacking,
-                gather: true,
-                noLos: true,
-                sound: Enums_1.SfxType.TreeHit,
-                leftOver: this.terrainCloudWater,
-                noGfxSwitch: true,
-                noBackground: true,
-                doodad: this.doodadStormBoulder
-            }, this.terrainStorm);
-            this.addTerrainResource(this.terrainStormBoulder, [
-                { type: this.itemCloudstone },
-                { type: this.itemCloudstone, chance: 45 },
-                { type: this.itemCloudstone }
-            ]);
-            this.terrainStormstone = this.addTerrain({
-                name: "stormstone",
-                particles: { r: 20, g: 20, b: 20 },
-                gatherSkillUse: Enums_1.SkillType.Mining,
-                gather: true,
-                noLos: true,
-                sound: Enums_1.SfxType.RockHit,
-                leftOver: this.terrainStorm,
-                noGfxSwitch: true,
-                isMountain: true,
-                noBackground: true
-            });
-            this.addTerrainResource(this.terrainStormstone, [
-                { type: this.itemCloudstone },
-                { type: this.itemCloudstone },
-                { type: this.itemCloudstone },
-                { type: this.itemCloudstone },
-                { type: this.itemCloudstone },
-                { type: this.itemCloudstone },
-                { type: this.itemCloudstone },
-                { type: this.itemCloudstone },
-                { type: this.itemCloudstone },
-                { type: this.itemCloudstone },
-                { type: this.itemCloudstone, chance: 45 },
-                { type: this.itemCloudstone }
-            ]);
-            this.terrainHole = this.addTerrain({
-                name: "hole",
-                prefix: "a ",
-                passable: true,
-                particles: { r: 250, g: 250, b: 250 },
-                noBackground: true
-            });
-            this.terrainCloudWater = this.addTerrain({
-                name: "cloud water",
-                passable: true,
-                shallowWater: true,
-                particles: { r: 47, g: 128, b: 157 },
-                freshWater: true,
-                noBackground: true,
-                tileOnConsume: this.terrainHole
-            });
-        }
-        initializeCreatures() {
-            this.creatureBear = this.addCreature({
-                name: "cloud bear",
-                prefix: "a ",
-                minhp: 18,
-                maxhp: 21,
-                minatk: 5,
-                maxatk: 13,
-                defense: new Enums_1.Defense(3, new Enums_1.Resistances(Enums_1.DamageType.Piercing, 3, Enums_1.DamageType.Blunt, 1), new Enums_1.Vulnerabilities()),
-                damageType: Enums_1.DamageType.Slashing | Enums_1.DamageType.Blunt,
-                ai: IEntity_1.AiType.Hostile,
-                moveType: Enums_1.MoveType.Land | Enums_1.MoveType.ShallowWater | Enums_1.MoveType.Water | Enums_1.MoveType.BreakDoodads,
-                canCauseStatus: [Enums_1.StatusType.Bleeding],
-                spawnTiles: ICreature_1.SpawnableTiles.None,
-                spawnReputation: 16000,
-                reputation: 300,
-                makeNoise: true,
-                loot: [{
-                        item: this.itemRainbow,
-                        chance: 50
-                    }]
-            }, {
-                resource: [
-                    { item: Enums_1.ItemType.Cotton },
-                    { item: Enums_1.ItemType.AnimalClaw },
-                    { item: Enums_1.ItemType.AnimalFat },
-                    { item: Enums_1.ItemType.RawMeat },
-                    { item: Enums_1.ItemType.RawMeat },
-                    { item: Enums_1.ItemType.AnimalSkull },
-                    { item: Enums_1.ItemType.Offal },
-                    { item: Enums_1.ItemType.Bone },
-                    { item: Enums_1.ItemType.BoneFragments }
-                ],
-                decay: 2800,
-                skill: Enums_1.SkillType.Anatomy
-            });
-            this.creatureRabbit = this.addCreature({
-                name: "cloud rabbit",
-                prefix: "a ",
-                minhp: 3,
-                maxhp: 6,
-                minatk: 1,
-                maxatk: 2,
-                defense: new Enums_1.Defense(0, new Enums_1.Resistances(), new Enums_1.Vulnerabilities()),
-                damageType: Enums_1.DamageType.Slashing,
-                ai: IEntity_1.AiType.Scared,
-                moveType: Enums_1.MoveType.Land | Enums_1.MoveType.ShallowWater,
-                spawnTiles: ICreature_1.SpawnableTiles.None,
-                reputation: -200,
-                makeNoise: true,
-                jumpOver: true,
-                loot: [{ item: this.itemSnowflakes }]
-            }, {
-                resource: [
-                    { item: Enums_1.ItemType.Cotton },
-                    { item: Enums_1.ItemType.RawMeat },
-                    { item: Enums_1.ItemType.Offal },
-                    { item: Enums_1.ItemType.BoneFragments }
-                ],
-                decay: 2400,
-                skill: Enums_1.SkillType.Anatomy
-            });
-            this.creatureCloudling = this.addCreature({
-                name: "cloudling",
-                prefix: "a ",
-                minhp: 4,
-                maxhp: 9,
-                minatk: 2,
-                maxatk: 3,
-                defense: new Enums_1.Defense(0, new Enums_1.Resistances(Enums_1.DamageType.Piercing, 1), new Enums_1.Vulnerabilities(Enums_1.DamageType.Blunt, 1)),
-                damageType: Enums_1.DamageType.Piercing,
-                ai: IEntity_1.AiType.Neutral,
-                moveType: Enums_1.MoveType.Flying,
-                reputation: 100,
-                spawnTiles: ICreature_1.SpawnableTiles.None,
-                loot: [
-                    {
-                        item: this.itemSnowflakes,
-                        chance: 75
-                    },
-                    { item: Enums_1.ItemType.Feather }
-                ],
-                lootGroup: Enums_1.LootGroupType.Low
-            }, {
-                resource: [
-                    { item: Enums_1.ItemType.Feather },
-                    { item: Enums_1.ItemType.Feather },
-                    { item: Enums_1.ItemType.TailFeathers, chance: 1 },
-                    { item: Enums_1.ItemType.RawChicken },
-                    { item: Enums_1.ItemType.BoneFragments }
-                ],
-                decay: 2400,
-                skill: Enums_1.SkillType.Anatomy
-            });
-            this.creatureLightningElemental = this.addCreature({
-                name: "lightning elemental",
-                prefix: "a ",
-                minhp: 30,
-                maxhp: 38,
-                minatk: 11,
-                maxatk: 19,
-                defense: new Enums_1.Defense(5, new Enums_1.Resistances(Enums_1.DamageType.Fire, 100), new Enums_1.Vulnerabilities()),
-                damageType: Enums_1.DamageType.Fire | Enums_1.DamageType.Blunt,
-                ai: IEntity_1.AiType.Hostile,
-                moveType: Enums_1.MoveType.Flying,
-                spawnTiles: ICreature_1.SpawnableTiles.None,
-                lootGroup: Enums_1.LootGroupType.High,
-                loot: [{ item: Enums_1.ItemType.PileOfAsh }],
-                blood: { r: 141, g: 155, b: 158 },
-                aberrantBlood: { r: 95, g: 107, b: 122 },
-                canCauseStatus: [Enums_1.StatusType.Bleeding],
-                spawnReputation: 32000,
-                reputation: 300,
-                makeNoise: true
-            }, {
-                resource: [{ item: Enums_1.ItemType.PileOfAsh }],
-                decay: 400,
-                skill: Enums_1.SkillType.Mining,
-                name: "fulgurite",
-                prefix: "a "
-            });
-            this.creatureSprite = this.addCreature({
-                name: "sprite",
-                prefix: "a ",
-                minhp: 30,
-                maxhp: 38,
-                minatk: 11,
-                maxatk: 19,
-                defense: new Enums_1.Defense(5, new Enums_1.Resistances(Enums_1.DamageType.Fire, 100), new Enums_1.Vulnerabilities()),
-                damageType: Enums_1.DamageType.Fire | Enums_1.DamageType.Blunt,
-                ai: IEntity_1.AiType.Hostile,
-                moveType: Enums_1.MoveType.Flying,
-                spawnTiles: ICreature_1.SpawnableTiles.None,
-                lootGroup: Enums_1.LootGroupType.High,
-                blood: { r: 238, g: 130, b: 134 },
-                canCauseStatus: [Enums_1.StatusType.Bleeding],
-                spawnReputation: 32000,
-                reputation: 500,
-                makeNoise: true
-            }, {
-                resource: [{ item: Enums_1.ItemType.Ectoplasm }],
-                decay: 100,
-                blood: false,
-                name: "ethereal mist",
-                prefix: ""
-            });
-            this.creaturePool = [this.creatureBear, this.creatureRabbit, this.creatureCloudling, this.creatureLightningElemental];
-        }
-        initializeSkills() {
-            this.skillFlying = this.addSkillType({
-                name: "Flying",
-                description: "Increases your damage resistance when falling from the Troposphere."
-            });
-        }
-        onNimbus(player, argument) {
-            this.setFlying(player, player.z !== Troposphere.troposphereZ, true);
-            if (argument.item) {
-                argument.item.damage(argument.type.toString());
-            }
-        }
-        onGatherRainbow(player, argument) {
-            const tile = player.getFacingTile();
-            const tileDoodad = tile.doodad;
-            if (!tileDoodad || tileDoodad.type !== this.doodadRainbow) {
-                player.messages.source(IMessageManager_1.Source.Action)
-                    .send(this.messageNoRainbow);
-                return;
-            }
-            player.messages.source(IMessageManager_1.Source.Action, IMessageManager_1.Source.Resource)
-                .send(this.messageGatheredRainbow);
-            game.particle.create(player.x + player.direction.x, player.y + player.direction.y, player.z, { r: 12, g: 128, b: 247 });
-            if (argument.item) {
-                argument.item.changeInto(this.itemRainbowGlassBottle);
-            }
-            doodadManager.remove(tileDoodad);
-            game.passTurn(player);
         }
         setFlying(player, flying, passTurn) {
             const z = !flying ? Enums_1.WorldZ.Overworld : Troposphere.troposphereZ;
@@ -398,7 +37,7 @@ define(["require", "exports", "creature/ICreature", "entity/IEntity", "Enums", "
             if (openTile === undefined || player.z === Enums_1.WorldZ.Cave) {
                 if (passTurn) {
                     player.messages.source(IMessageManager_1.Source.Action)
-                        .type(IMessages_1.MessageType.Bad)
+                        .type(MessageManager_1.MessageType.Bad)
                         .send(flying ? this.messageFlewToTroposphereFailure : this.messageFlewToLandFailure);
                 }
                 return false;
@@ -413,7 +52,7 @@ define(["require", "exports", "creature/ICreature", "entity/IEntity", "Enums", "
             });
             if (passTurn) {
                 player.messages.source(IMessageManager_1.Source.Action, IMessageManager_1.Source.Item)
-                    .type(IMessages_1.MessageType.Good)
+                    .type(MessageManager_1.MessageType.Good)
                     .send(flying ? this.messageFlewToTroposphere : this.messageFlewToLand);
                 game.passTurn(player);
             }
@@ -588,8 +227,7 @@ define(["require", "exports", "creature/ICreature", "entity/IEntity", "Enums", "
                 this.setFlying(player, false, false);
                 if (player.state !== Enums_1.PlayerState.Ghost) {
                     let damage = -40;
-                    const flyingSkill = player.skills[this.skillFlying];
-                    damage *= flyingSkill ? 1 - (flyingSkill.percent / 100) : 1;
+                    damage *= 1 - player.getSkill(this.skillFlying) / 100;
                     const tile = game.getTile(player.x, player.y, player.z);
                     const terrainType = TileHelpers_1.default.getType(tile);
                     if (terrainType === Enums_1.TerrainType.DeepFreshWater || terrainType === Enums_1.TerrainType.DeepSeawater) {
@@ -598,9 +236,9 @@ define(["require", "exports", "creature/ICreature", "entity/IEntity", "Enums", "
                     else if (terrainType === Enums_1.TerrainType.FreshWater || terrainType === Enums_1.TerrainType.Seawater) {
                         damage *= .75;
                     }
-                    damage = player.damage(damage, Messages_1.messages[this.messageDeathByFalling]);
+                    damage = player.damage(damage, this.messageDeathByFalling);
                     player.messages.source(IMessageManager_1.Source.Wellbeing)
-                        .type(IMessages_1.MessageType.Bad)
+                        .type(MessageManager_1.MessageType.Bad)
                         .send(this.messageFellToLand, damage);
                     if (damage > 25 || damage > 15 && Random_1.default.chance(.5)) {
                         corpseManager.create(tileAtlas.isWater(terrainType) ? Enums_1.CreatureType.WaterBlood : Enums_1.CreatureType.Blood, player.x, player.y, player.z);
@@ -611,7 +249,7 @@ define(["require", "exports", "creature/ICreature", "entity/IEntity", "Enums", "
             }
         }
         canConsumeItem(player, itemType, actionType) {
-            if (itemType === this.itemRainbowGlassBottle && actionType === Enums_1.ActionType.DrinkItem) {
+            if (itemType === this.itemRainbowGlassBottle && actionType === IAction_1.ActionType.DrinkItem) {
                 player.customization = {
                     hairStyle: Enums_1.HairStyle[Enums_2.default.getRandom(Enums_1.HairStyle)],
                     hairColor: Enums_1.HairColor[Enums_2.default.getRandom(Enums_1.HairColor)],
@@ -676,6 +314,9 @@ define(["require", "exports", "creature/ICreature", "entity/IEntity", "Enums", "
     }
     Troposphere.troposphereZ = Enums_1.WorldZ.Max + 1;
     __decorate([
+        ModRegistry_1.default.skill("flying")
+    ], Troposphere.prototype, "skillFlying", void 0);
+    __decorate([
         ModRegistry_1.default.helpArticle("Flying", {
             image: true,
             section: "Troposphere"
@@ -686,6 +327,34 @@ define(["require", "exports", "creature/ICreature", "entity/IEntity", "Enums", "
             learnMore: ModRegistry_1.Registry().get("flyingHelpArticle")
         })
     ], Troposphere.prototype, "flyingNote", void 0);
+    __decorate([
+        ModRegistry_1.default.action("Fly", new Action_1.Action(IAction_1.ActionArgument.ItemInventory)
+            .setUsableBy(IEntity_1.EntityType.Player)
+            .setHandler((action, item) => {
+            Troposphere.INSTANCE.setFlying(action.executor, action.executor.z !== Troposphere.troposphereZ, true);
+            item.damage(IAction_1.ActionType[action.type]);
+        }))
+    ], Troposphere.prototype, "actionFly", void 0);
+    __decorate([
+        ModRegistry_1.default.action("GatherRainbow", new Action_1.Action(IAction_1.ActionArgument.ItemNearby)
+            .setUsableBy(IEntity_1.EntityType.Player)
+            .setHandler((action, item) => {
+            const player = action.executor;
+            const tile = player.getFacingTile();
+            const tileDoodad = tile.doodad;
+            if (!tileDoodad || tileDoodad.type !== Troposphere.INSTANCE.doodadRainbow) {
+                player.messages.source(IMessageManager_1.Source.Action)
+                    .send(Troposphere.INSTANCE.messageNoRainbow);
+                return;
+            }
+            player.messages.source(IMessageManager_1.Source.Action, IMessageManager_1.Source.Resource)
+                .send(Troposphere.INSTANCE.messageGatheredRainbow);
+            game.particle.create(player.x + player.direction.x, player.y + player.direction.y, player.z, { r: 12, g: 128, b: 247 });
+            item.changeInto(Troposphere.INSTANCE.itemRainbowGlassBottle);
+            doodadManager.remove(tileDoodad);
+            game.passTurn(player);
+        }))
+    ], Troposphere.prototype, "actionGatherRainbow", void 0);
     __decorate([
         ModRegistry_1.default.message("FlewToTroposphere")
     ], Troposphere.prototype, "messageFlewToTroposphere", void 0);
@@ -711,17 +380,326 @@ define(["require", "exports", "creature/ICreature", "entity/IEntity", "Enums", "
         ModRegistry_1.default.message("NoRainbow")
     ], Troposphere.prototype, "messageNoRainbow", void 0);
     __decorate([
-        ModRegistry_1.default.action({
-            name: "Fly",
-            description: "Fly to and from the Troposphere."
+        ModRegistry_1.default.item("Nimbus", {
+            use: [ModRegistry_1.Registry().get("actionFly")],
+            recipe: {
+                components: [
+                    Items_1.RecipeComponent(Enums_1.ItemType.Feather, 2, 2, 2),
+                    Items_1.RecipeComponent(ModRegistry_1.Registry().get("itemCloudstone"), 1, 1, 1),
+                    Items_1.RecipeComponent(ModRegistry_1.Registry().get("itemSnowflakes"), 1, 1, 1)
+                ],
+                skill: ModRegistry_1.Registry().get("skillFlying"),
+                level: Enums_1.RecipeLevel.Simple,
+                reputation: 50
+            },
+            disassemble: true,
+            durability: 15,
+            weight: 1.0
         })
-    ], Troposphere.prototype, "onNimbus", null);
+    ], Troposphere.prototype, "itemNimbus", void 0);
     __decorate([
-        ModRegistry_1.default.action({
-            name: "Gather Rainbow",
-            description: "Gather a rainbow with a container."
+        ModRegistry_1.default.item("Rainbow", {
+            weight: 0.1,
+            use: [IAction_1.ActionType.DrinkItem, IAction_1.ActionType.Build],
+            onUse: {
+                [IAction_1.ActionType.Build]: ModRegistry_1.Registry().get("doodadRainbow")
+            }
         })
-    ], Troposphere.prototype, "onGatherRainbow", null);
+    ], Troposphere.prototype, "itemRainbow", void 0);
+    __decorate([
+        ModRegistry_1.default.item("RainbowGlassBottle", {
+            weight: 1.0,
+            use: [IAction_1.ActionType.DrinkItem],
+            returnOnUse: [Enums_1.ItemType.GlassBottle, false]
+        })
+    ], Troposphere.prototype, "itemRainbowGlassBottle", void 0);
+    __decorate([
+        ModRegistry_1.default.item("Snowflakes", {
+            weight: 0.1
+        })
+    ], Troposphere.prototype, "itemSnowflakes", void 0);
+    __decorate([
+        ModRegistry_1.default.item("Cloudstone", {
+            weight: 1
+        })
+    ], Troposphere.prototype, "itemCloudstone", void 0);
+    __decorate([
+        ModRegistry_1.default.doodad("CloudBoulder", {
+            particles: { r: 176, g: 153, b: 134 }
+        })
+    ], Troposphere.prototype, "doodadCloudBoulder", void 0);
+    __decorate([
+        ModRegistry_1.default.doodad("StormBoulder", {
+            particles: { r: 176, g: 153, b: 134 }
+        })
+    ], Troposphere.prototype, "doodadStormBoulder", void 0);
+    __decorate([
+        ModRegistry_1.default.doodad("Rainbow", {
+            particles: { r: 176, g: 153, b: 134 },
+            blockMove: true
+        })
+    ], Troposphere.prototype, "doodadRainbow", void 0);
+    __decorate([
+        ModRegistry_1.default.terrain("CloudWater", {
+            passable: true,
+            shallowWater: true,
+            particles: { r: 47, g: 128, b: 157 },
+            freshWater: true,
+            noBackground: true,
+            tileOnConsume: ModRegistry_1.Registry().get("terrainHole")
+        })
+    ], Troposphere.prototype, "terrainCloudWater", void 0);
+    __decorate([
+        ModRegistry_1.default.terrain("Clouds", {
+            passable: true,
+            particles: { r: 250, g: 250, b: 250 },
+            noBackground: true
+        })
+    ], Troposphere.prototype, "terrainCloud", void 0);
+    __decorate([
+        ModRegistry_1.default.terrain("CloudBoulder", {
+            particles: { r: 250, g: 250, b: 250 },
+            gatherSkillUse: Enums_1.SkillType.Lumberjacking,
+            gather: true,
+            noLos: true,
+            sound: Enums_1.SfxType.TreeHit,
+            leftOver: ModRegistry_1.Registry().get("terrainCloudWater"),
+            noGfxSwitch: true,
+            noBackground: true,
+            doodad: ModRegistry_1.Registry().get("doodadCloudBoulder"),
+            resources: [
+                { type: ModRegistry_1.Registry().get("itemCloudstone") }
+            ],
+            terrainType: ModRegistry_1.Registry().get("terrainCloud")
+        })
+    ], Troposphere.prototype, "terrainCloudBoulder", void 0);
+    __decorate([
+        ModRegistry_1.default.terrain("Cloudstone", {
+            particles: { r: 250, g: 250, b: 250 },
+            gatherSkillUse: Enums_1.SkillType.Mining,
+            gather: true,
+            noLos: true,
+            sound: Enums_1.SfxType.RockHit,
+            leftOver: ModRegistry_1.Registry().get("terrainCloud"),
+            noGfxSwitch: true,
+            isMountain: true,
+            noBackground: true,
+            resources: [
+                { type: ModRegistry_1.Registry().get("itemCloudstone") },
+                { type: ModRegistry_1.Registry().get("itemCloudstone") },
+                { type: ModRegistry_1.Registry().get("itemCloudstone") },
+                { type: ModRegistry_1.Registry().get("itemCloudstone") },
+                { type: ModRegistry_1.Registry().get("itemCloudstone") },
+                { type: ModRegistry_1.Registry().get("itemCloudstone") },
+                { type: ModRegistry_1.Registry().get("itemCloudstone"), chance: 45 },
+                { type: ModRegistry_1.Registry().get("itemCloudstone") }
+            ]
+        })
+    ], Troposphere.prototype, "terrainCloudstone", void 0);
+    __decorate([
+        ModRegistry_1.default.terrain("Storm", {
+            passable: true,
+            particles: { r: 20, g: 20, b: 20 },
+            noBackground: true
+        })
+    ], Troposphere.prototype, "terrainStorm", void 0);
+    __decorate([
+        ModRegistry_1.default.terrain("StormBoulder", {
+            particles: { r: 20, g: 20, b: 20 },
+            gatherSkillUse: Enums_1.SkillType.Lumberjacking,
+            gather: true,
+            noLos: true,
+            sound: Enums_1.SfxType.TreeHit,
+            leftOver: ModRegistry_1.Registry().get("terrainCloudWater"),
+            noGfxSwitch: true,
+            noBackground: true,
+            doodad: ModRegistry_1.Registry().get("doodadStormBoulder"),
+            resources: [
+                { type: ModRegistry_1.Registry().get("itemCloudstone") },
+                { type: ModRegistry_1.Registry().get("itemCloudstone"), chance: 45 },
+                { type: ModRegistry_1.Registry().get("itemCloudstone") }
+            ],
+            terrainType: ModRegistry_1.Registry().get("terrainStorm")
+        })
+    ], Troposphere.prototype, "terrainStormBoulder", void 0);
+    __decorate([
+        ModRegistry_1.default.terrain("Stormstone", {
+            particles: { r: 20, g: 20, b: 20 },
+            gatherSkillUse: Enums_1.SkillType.Mining,
+            gather: true,
+            noLos: true,
+            sound: Enums_1.SfxType.RockHit,
+            leftOver: ModRegistry_1.Registry().get("terrainStorm"),
+            noGfxSwitch: true,
+            isMountain: true,
+            noBackground: true,
+            resources: [
+                { type: ModRegistry_1.Registry().get("itemCloudstone") },
+                { type: ModRegistry_1.Registry().get("itemCloudstone") },
+                { type: ModRegistry_1.Registry().get("itemCloudstone") },
+                { type: ModRegistry_1.Registry().get("itemCloudstone") },
+                { type: ModRegistry_1.Registry().get("itemCloudstone") },
+                { type: ModRegistry_1.Registry().get("itemCloudstone") },
+                { type: ModRegistry_1.Registry().get("itemCloudstone") },
+                { type: ModRegistry_1.Registry().get("itemCloudstone") },
+                { type: ModRegistry_1.Registry().get("itemCloudstone") },
+                { type: ModRegistry_1.Registry().get("itemCloudstone") },
+                { type: ModRegistry_1.Registry().get("itemCloudstone"), chance: 45 },
+                { type: ModRegistry_1.Registry().get("itemCloudstone") }
+            ]
+        })
+    ], Troposphere.prototype, "terrainStormstone", void 0);
+    __decorate([
+        ModRegistry_1.default.terrain("Hole", {
+            passable: true,
+            particles: { r: 250, g: 250, b: 250 },
+            noBackground: true
+        })
+    ], Troposphere.prototype, "terrainHole", void 0);
+    __decorate([
+        ModRegistry_1.default.creature("CloudBear", {
+            minhp: 18,
+            maxhp: 21,
+            minatk: 5,
+            maxatk: 13,
+            defense: new Enums_1.Defense(3, new Enums_1.Resistances(Enums_1.DamageType.Piercing, 3, Enums_1.DamageType.Blunt, 1), new Enums_1.Vulnerabilities()),
+            damageType: Enums_1.DamageType.Slashing | Enums_1.DamageType.Blunt,
+            ai: IEntity_1.AiType.Hostile,
+            moveType: Enums_1.MoveType.Land | Enums_1.MoveType.ShallowWater | Enums_1.MoveType.Water | Enums_1.MoveType.BreakDoodads,
+            canCauseStatus: [Enums_1.StatusType.Bleeding],
+            spawnTiles: ICreature_1.SpawnableTiles.None,
+            spawnReputation: 16000,
+            reputation: 300,
+            makeNoise: true,
+            loot: [{
+                    item: ModRegistry_1.Registry().get("itemRainbow"),
+                    chance: 50
+                }]
+        }, {
+            resource: [
+                { item: Enums_1.ItemType.Cotton },
+                { item: Enums_1.ItemType.AnimalClaw },
+                { item: Enums_1.ItemType.AnimalFat },
+                { item: Enums_1.ItemType.RawMeat },
+                { item: Enums_1.ItemType.RawMeat },
+                { item: Enums_1.ItemType.AnimalSkull },
+                { item: Enums_1.ItemType.Offal },
+                { item: Enums_1.ItemType.Bone },
+                { item: Enums_1.ItemType.BoneFragments }
+            ],
+            decay: 2800,
+            skill: Enums_1.SkillType.Anatomy
+        })
+    ], Troposphere.prototype, "creatureBear", void 0);
+    __decorate([
+        ModRegistry_1.default.creature("CloudRabbit", {
+            minhp: 3,
+            maxhp: 6,
+            minatk: 1,
+            maxatk: 2,
+            defense: new Enums_1.Defense(0, new Enums_1.Resistances(), new Enums_1.Vulnerabilities()),
+            damageType: Enums_1.DamageType.Slashing,
+            ai: IEntity_1.AiType.Scared,
+            moveType: Enums_1.MoveType.Land | Enums_1.MoveType.ShallowWater,
+            spawnTiles: ICreature_1.SpawnableTiles.None,
+            reputation: -200,
+            makeNoise: true,
+            jumpOver: true,
+            loot: [{ item: ModRegistry_1.Registry().get("itemSnowflakes") }]
+        }, {
+            resource: [
+                { item: Enums_1.ItemType.Cotton },
+                { item: Enums_1.ItemType.RawMeat },
+                { item: Enums_1.ItemType.Offal },
+                { item: Enums_1.ItemType.BoneFragments }
+            ],
+            decay: 2400,
+            skill: Enums_1.SkillType.Anatomy
+        })
+    ], Troposphere.prototype, "creatureRabbit", void 0);
+    __decorate([
+        ModRegistry_1.default.creature("Cloudling", {
+            minhp: 4,
+            maxhp: 9,
+            minatk: 2,
+            maxatk: 3,
+            defense: new Enums_1.Defense(0, new Enums_1.Resistances(Enums_1.DamageType.Piercing, 1), new Enums_1.Vulnerabilities(Enums_1.DamageType.Blunt, 1)),
+            damageType: Enums_1.DamageType.Piercing,
+            ai: IEntity_1.AiType.Neutral,
+            moveType: Enums_1.MoveType.Flying,
+            reputation: 100,
+            spawnTiles: ICreature_1.SpawnableTiles.None,
+            loot: [
+                {
+                    item: ModRegistry_1.Registry().get("itemSnowflakes"),
+                    chance: 75
+                },
+                { item: Enums_1.ItemType.Feather }
+            ],
+            lootGroup: Enums_1.LootGroupType.Low
+        }, {
+            resource: [
+                { item: Enums_1.ItemType.Feather },
+                { item: Enums_1.ItemType.Feather },
+                { item: Enums_1.ItemType.TailFeathers, chance: 1 },
+                { item: Enums_1.ItemType.RawChicken },
+                { item: Enums_1.ItemType.BoneFragments }
+            ],
+            decay: 2400,
+            skill: Enums_1.SkillType.Anatomy
+        })
+    ], Troposphere.prototype, "creatureCloudling", void 0);
+    __decorate([
+        ModRegistry_1.default.creature("LightningElemental", {
+            minhp: 30,
+            maxhp: 38,
+            minatk: 11,
+            maxatk: 19,
+            defense: new Enums_1.Defense(5, new Enums_1.Resistances(Enums_1.DamageType.Fire, 100), new Enums_1.Vulnerabilities()),
+            damageType: Enums_1.DamageType.Fire | Enums_1.DamageType.Blunt,
+            ai: IEntity_1.AiType.Hostile,
+            moveType: Enums_1.MoveType.Flying,
+            spawnTiles: ICreature_1.SpawnableTiles.None,
+            lootGroup: Enums_1.LootGroupType.High,
+            loot: [{ item: Enums_1.ItemType.PileOfAsh }],
+            blood: { r: 141, g: 155, b: 158 },
+            aberrantBlood: { r: 95, g: 107, b: 122 },
+            canCauseStatus: [Enums_1.StatusType.Bleeding],
+            spawnReputation: 32000,
+            reputation: 300,
+            makeNoise: true
+        }, {
+            resource: [{ item: Enums_1.ItemType.PileOfAsh }],
+            decay: 400,
+            skill: Enums_1.SkillType.Mining
+        })
+    ], Troposphere.prototype, "creatureLightningElemental", void 0);
+    __decorate([
+        ModRegistry_1.default.creature("Sprite", {
+            minhp: 30,
+            maxhp: 38,
+            minatk: 11,
+            maxatk: 19,
+            defense: new Enums_1.Defense(5, new Enums_1.Resistances(Enums_1.DamageType.Fire, 100), new Enums_1.Vulnerabilities()),
+            damageType: Enums_1.DamageType.Fire | Enums_1.DamageType.Blunt,
+            ai: IEntity_1.AiType.Hostile,
+            moveType: Enums_1.MoveType.Flying,
+            spawnTiles: ICreature_1.SpawnableTiles.None,
+            lootGroup: Enums_1.LootGroupType.High,
+            blood: { r: 238, g: 130, b: 134 },
+            canCauseStatus: [Enums_1.StatusType.Bleeding],
+            spawnReputation: 32000,
+            reputation: 500,
+            makeNoise: true
+        }, {
+            resource: [{ item: Enums_1.ItemType.Ectoplasm }],
+            decay: 100,
+            blood: false
+        })
+    ], Troposphere.prototype, "creatureSprite", void 0);
+    __decorate([
+        Mod_1.default.saveData("Troposphere")
+    ], Troposphere.prototype, "data", void 0);
     __decorate([
         IHookHost_1.HookMethod
     ], Troposphere.prototype, "onCreateWorld", null);
@@ -767,6 +745,9 @@ define(["require", "exports", "creature/ICreature", "entity/IEntity", "Enums", "
     __decorate([
         IHookHost_1.HookMethod
     ], Troposphere.prototype, "getTilePenalty", null);
+    __decorate([
+        Mod_1.default.instance("Troposphere")
+    ], Troposphere, "INSTANCE", void 0);
     exports.default = Troposphere;
 });
-//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiVHJvcG9zcGhlcmUuanMiLCJzb3VyY2VSb290IjoiIiwic291cmNlcyI6WyJUcm9wb3NwaGVyZS50cyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7SUE0QkEsTUFBcUIsV0FBWSxTQUFRLGFBQUc7UUFnRXBDLE1BQU0sQ0FBQyxJQUFTO1lBQ3RCLElBQUksQ0FBQyxJQUFJLEdBQUcsSUFBSSxDQUFDO1lBRWpCLElBQUksQ0FBQyxTQUFTLEdBQUcsQ0FBQyxJQUFJLENBQUMsSUFBSSxDQUFDO1lBQzVCLElBQUksSUFBSSxDQUFDLFNBQVMsRUFBRTtnQkFDbkIsSUFBSSxDQUFDLElBQUksR0FBRztvQkFDWCxJQUFJLEVBQUUsSUFBSSxJQUFJLEVBQUUsQ0FBQyxPQUFPLEVBQUU7aUJBQzFCLENBQUM7YUFDRjtZQUVELElBQUksQ0FBQyxnQkFBZ0IsRUFBRSxDQUFDO1lBQ3hCLElBQUksQ0FBQyxpQkFBaUIsRUFBRSxDQUFDO1lBQ3pCLElBQUksQ0FBQyxlQUFlLEVBQUUsQ0FBQztZQUN2QixJQUFJLENBQUMsaUJBQWlCLEVBQUUsQ0FBQztZQUN6QixJQUFJLENBQUMsbUJBQW1CLEVBQUUsQ0FBQztRQUM1QixDQUFDO1FBRU0sUUFBUTtZQUNkLE1BQU0sV0FBVyxHQUFHLElBQUksQ0FBQyxhQUFhLENBQUMsZ0JBQVEsQ0FBQyxXQUFXLENBQUMsQ0FBQztZQUM3RCxJQUFJLFdBQVcsSUFBSSxXQUFXLENBQUMsR0FBRyxFQUFFO2dCQUNuQyxXQUFXLENBQUMsR0FBRyxDQUFDLEdBQUcsRUFBRSxDQUFDO2FBQ3RCO1FBQ0YsQ0FBQztRQUVNLE1BQU07WUFDWixPQUFPLElBQUksQ0FBQyxJQUFJLENBQUM7UUFDbEIsQ0FBQztRQUtNLGVBQWU7WUFDckIsSUFBSSxDQUFDLFdBQVcsR0FBRyxJQUFJLENBQUMsT0FBTyxDQUFDO2dCQUMvQixXQUFXLEVBQUUsb0JBQW9CO2dCQUNqQyxJQUFJLEVBQUUsU0FBUztnQkFDZixNQUFNLEVBQUUsSUFBSTtnQkFDWixN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
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiVHJvcG9zcGhlcmUuanMiLCJzb3VyY2VSb290IjoiIiwic291cmNlcyI6WyJUcm9wb3NwaGVyZS50cyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7SUE2QkEsTUFBcUIsV0FBWSxTQUFRLGFBQUc7UUFBNUM7O1lBeWNRLGNBQVMsR0FBRyxJQUFJLENBQUM7UUFxWnpCLENBQUM7UUFuWkEsSUFBWSxZQUFZO1lBQ3ZCLE9BQU8sQ0FBQyxJQUFJLENBQUMsWUFBWSxFQUFFLElBQUksQ0FBQyxjQUFjLEVBQUUsSUFBSSxDQUFDLGlCQUFpQixFQUFFLElBQUksQ0FBQywwQkFBMEIsQ0FBQyxDQUFDO1FBQzFHLENBQUM7UUFHTSxrQkFBa0IsQ0FBQyxJQUF1QjtZQUNoRCxJQUFJLElBQUksRUFBRTtnQkFDVCxJQUFJLENBQUMsU0FBUyxHQUFHLEtBQUssQ0FBQztnQkFDdkIsT0FBTyxJQUFJLENBQUM7YUFDWjtZQUVELElBQUksQ0FBQyxTQUFTLEdBQUcsSUFBSSxDQUFDO1lBQ3RCLE9BQU87Z0JBQ04sSUFBSSxFQUFFLElBQUksSUFBSSxFQUFFLENBQUMsT0FBTyxFQUFFO2FBQzFCLENBQUM7UUFDSCxDQUFDO1FBRU0sUUFBUTtZQUNkLE1BQU0sV0FBVyxHQUFHLHdCQUFnQixDQUFDLGdCQUFRLENBQUMsV0FBVyxDQUFDLENBQUM7WUFDM0QsSUFBSSxXQUFXLElBQUksV0FBVyxDQUFDLEdBQUcsRUFBRTtnQkFDbkMsV0FBVyxDQUFDLEdBQUcsQ0FBQyxHQUFHLEVBQUUsQ0FBQzthQUN0QjtRQUNGLENBQUM7UUFFTSxTQUFTLENBQUMsTUFBZSxFQUFFLE1BQWUsRUFBRSxRQUFpQjtZQUNuRSxNQUFNLENBQUMsR0FBRyxDQUFDLE1BQU0sQ0FBQyxDQUFDLENBQUMsY0FBTSxDQUFDLFNBQVMsQ0FBQyxDQUFDLENBQUMsV0FBVyxDQUFDLFlBQVksQ0FBQztZQUVoRSxNQUFNLFFBQVEsR0FBRyxxQkFBVyxDQUFDLGdCQUFnQixDQUFDLE1BQU0sRUFBRSxJQUFJ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

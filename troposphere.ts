@@ -1,17 +1,18 @@
-import { IActionArgument } from "action/IAction";
+import { Action } from "action/Action";
+import { ActionArgument, ActionType } from "action/IAction";
 import { ICreature, SpawnableTiles, SpawnGroup } from "creature/ICreature";
-import { AiType } from "entity/IEntity";
-import { ActionType, CreatureType, DamageType, Defense, Delay, Direction, HairColor, HairStyle, ItemType, LootGroupType, MoveType, PlayerState, RecipeLevel, RenderFlag, Resistances, SfxType, SkillType, SkinColor, StatusType, TerrainType, Vulnerabilities, WorldZ } from "Enums";
-import { RecipeComponent } from "item/Items";
-import { Message, MessageType } from "language/IMessages";
-import { messages } from "language/Messages";
+import { AiType, EntityType } from "entity/IEntity";
+import { CreatureType, DamageType, Defense, Delay, Direction, DoodadType, HairColor, HairStyle, ItemType, LootGroupType, MoveType, PlayerState, RecipeLevel, RenderFlag, Resistances, SfxType, SkillType, SkinColor, StatusType, TerrainType, Vulnerabilities, WorldZ } from "Enums";
+import { itemDescriptions, RecipeComponent } from "item/Items";
+import Message from "language/dictionary/Message";
+import Note from "language/dictionary/Note";
 import { HookMethod } from "mod/IHookHost";
 import Mod from "mod/Mod";
 import Register, { Registry } from "mod/ModRegistry";
 import { HelpArticle } from "newui/screen/screens/menu/menus/help/HelpArticleDescriptions";
 import { Source } from "player/IMessageManager";
 import { IPlayer } from "player/IPlayer";
-import { Note } from "player/NoteManager";
+import { MessageType } from "player/MessageManager";
 import IWorld from "renderer/IWorld";
 import { ITile } from "tile/ITerrain";
 import Terrains from "tile/Terrains";
@@ -27,7 +28,18 @@ interface ITroposphereData {
 }
 
 export default class Troposphere extends Mod {
+
+	@Mod.instance<Troposphere>("Troposphere")
+	public static readonly INSTANCE: Troposphere;
+
 	private static readonly troposphereZ: number = WorldZ.Max + 1;
+
+	////////////////////////////////////
+	// Misc Registrations
+	//
+
+	@Register.skill("flying")
+	public skillFlying: SkillType;
 
 	@Register.helpArticle("Flying", {
 		image: true,
@@ -40,515 +52,462 @@ export default class Troposphere extends Mod {
 	})
 	public readonly flyingNote: Note;
 
+	////////////////////////////////////
+	// Action Registrations
+	//
+
+	@Register.action("Fly", new Action(ActionArgument.ItemInventory)
+		.setUsableBy(EntityType.Player)
+		.setHandler((action, item) => {
+			Troposphere.INSTANCE.setFlying(action.executor, action.executor.z !== Troposphere.troposphereZ, true);
+			item.damage(ActionType[action.type]);
+		}))
+	public readonly actionFly: ActionType;
+
+	@Register.action("GatherRainbow", new Action(ActionArgument.ItemNearby)
+		.setUsableBy(EntityType.Player)
+		.setHandler((action, item) => {
+			const player = action.executor;
+
+			const tile = player.getFacingTile();
+			const tileDoodad = tile.doodad;
+			if (!tileDoodad || tileDoodad.type !== Troposphere.INSTANCE.doodadRainbow) {
+				player.messages.source(Source.Action)
+					.send(Troposphere.INSTANCE.messageNoRainbow);
+				return;
+			}
+
+			player.messages.source(Source.Action, Source.Resource)
+				.send(Troposphere.INSTANCE.messageGatheredRainbow);
+
+			game.particle.create(player.x + player.direction.x, player.y + player.direction.y, player.z, { r: 12, g: 128, b: 247 });
+
+			item.changeInto(Troposphere.INSTANCE.itemRainbowGlassBottle);
+
+			doodadManager.remove(tileDoodad);
+
+			game.passTurn(player);
+		}))
+	public readonly actionGatherRainbow: ActionType;
+
+	////////////////////////////////////
+	// Messages
+	//
+
 	@Register.message("FlewToTroposphere")
 	public readonly messageFlewToTroposphere: Message;
+
 	@Register.message("FlewToTroposphereFailure")
 	public readonly messageFlewToTroposphereFailure: Message;
+
 	@Register.message("FlewToLand")
 	public readonly messageFlewToLand: Message;
+
 	@Register.message("FlewToLandFailure")
 	public readonly messageFlewToLandFailure: Message;
+
 	@Register.message("FellToLand")
 	public readonly messageFellToLand: Message;
+
 	@Register.message("DeathByFalling")
 	public readonly messageDeathByFalling: Message;
+
 	@Register.message("GatheredRainbow")
 	public readonly messageGatheredRainbow: Message;
+
 	@Register.message("NoRainbow")
 	public readonly messageNoRainbow: Message;
 
+	////////////////////////////////////
+	// Items
+	//
+
+	@Register.item("Nimbus", {
+		use: [Registry<Troposphere, ActionType>().get("actionFly")],
+		recipe: {
+			components: [
+				RecipeComponent(ItemType.Feather, 2, 2, 2),
+				RecipeComponent(Registry<Troposphere, ItemType>().get("itemCloudstone"), 1, 1, 1),
+				RecipeComponent(Registry<Troposphere, ItemType>().get("itemSnowflakes"), 1, 1, 1)
+			],
+			skill: Registry<Troposphere, SkillType>().get("skillFlying"),
+			level: RecipeLevel.Simple,
+			reputation: 50
+		},
+		disassemble: true,
+		durability: 15,
+		weight: 1.0
+	})
+	public itemNimbus: ItemType;
+
+	@Register.item("Rainbow", {
+		weight: 0.1,
+		use: [ActionType.DrinkItem, ActionType.Build],
+		onUse: {
+			[ActionType.Build]: Registry<Troposphere, DoodadType>().get("doodadRainbow")
+		}
+	})
+	public itemRainbow: ItemType;
+
+	@Register.item("RainbowGlassBottle", {
+		weight: 1.0,
+		use: [ActionType.DrinkItem],
+		returnOnUse: [ItemType.GlassBottle, false]
+	})
+	public itemRainbowGlassBottle: ItemType;
+
+	@Register.item("Snowflakes", {
+		weight: 0.1
+	})
+	public itemSnowflakes: ItemType;
+
+	@Register.item("Cloudstone", {
+		weight: 1
+	})
+	public itemCloudstone: ItemType;
+
+	////////////////////////////////////
+	// Doodads
+	//
+
+	@Register.doodad("CloudBoulder", {
+		particles: { r: 176, g: 153, b: 134 }
+	})
+	public doodadCloudBoulder: DoodadType;
+
+	@Register.doodad("StormBoulder", {
+		particles: { r: 176, g: 153, b: 134 }
+	})
+	public doodadStormBoulder: DoodadType;
+
+	@Register.doodad("Rainbow", {
+		particles: { r: 176, g: 153, b: 134 },
+		blockMove: true
+	})
+	public doodadRainbow: DoodadType;
+
+	////////////////////////////////////
+	// Terrain
+	//
+
+	@Register.terrain("CloudWater", {
+		passable: true,
+		shallowWater: true,
+		particles: { r: 47, g: 128, b: 157 },
+		freshWater: true,
+		noBackground: true,
+		tileOnConsume: Registry<Troposphere, TerrainType>().get("terrainHole")
+	})
+	public terrainCloudWater: TerrainType;
+
+	@Register.terrain("Clouds", {
+		passable: true,
+		particles: { r: 250, g: 250, b: 250 },
+		noBackground: true
+	})
+	public terrainCloud: TerrainType;
+
+	@Register.terrain("CloudBoulder", {
+		particles: { r: 250, g: 250, b: 250 },
+		gatherSkillUse: SkillType.Lumberjacking,
+		gather: true,
+		noLos: true,
+		sound: SfxType.TreeHit,
+		leftOver: Registry<Troposphere, TerrainType>().get("terrainCloudWater"),
+		noGfxSwitch: true,
+		noBackground: true,
+		doodad: Registry<Troposphere, DoodadType>().get("doodadCloudBoulder"),
+		resources: [
+			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") }
+		],
+		terrainType: Registry<Troposphere, TerrainType>().get("terrainCloud")
+	})
+	public terrainCloudBoulder: TerrainType;
+
+	@Register.terrain("Cloudstone", {
+		particles: { r: 250, g: 250, b: 250 },
+		gatherSkillUse: SkillType.Mining,
+		gather: true,
+		noLos: true,
+		sound: SfxType.RockHit,
+		leftOver: Registry<Troposphere, TerrainType>().get("terrainCloud"),
+		noGfxSwitch: true,
+		isMountain: true,
+		noBackground: true,
+		resources: [
+			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
+			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
+			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
+			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
+			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
+			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
+			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone"), chance: 45 },
+			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") }
+		]
+	})
+	public terrainCloudstone: TerrainType;
+
+	@Register.terrain("Storm", {
+		passable: true,
+		particles: { r: 20, g: 20, b: 20 },
+		noBackground: true
+	})
+	public terrainStorm: TerrainType;
+
+	@Register.terrain("StormBoulder", {
+		particles: { r: 20, g: 20, b: 20 },
+		gatherSkillUse: SkillType.Lumberjacking,
+		gather: true,
+		noLos: true,
+		sound: SfxType.TreeHit,
+		leftOver: Registry<Troposphere, TerrainType>().get("terrainCloudWater"),
+		noGfxSwitch: true,
+		noBackground: true,
+		doodad: Registry<Troposphere, DoodadType>().get("doodadStormBoulder"),
+		resources: [
+			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
+			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone"), chance: 45 },
+			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") }
+		],
+		terrainType: Registry<Troposphere, TerrainType>().get("terrainStorm")
+	})
+	public terrainStormBoulder: TerrainType;
+
+	@Register.terrain("Stormstone", {
+		particles: { r: 20, g: 20, b: 20 },
+		gatherSkillUse: SkillType.Mining,
+		gather: true,
+		noLos: true,
+		sound: SfxType.RockHit,
+		leftOver: Registry<Troposphere, TerrainType>().get("terrainStorm"),
+		noGfxSwitch: true,
+		isMountain: true,
+		noBackground: true,
+		resources: [
+			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
+			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
+			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
+			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
+			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
+			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
+			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
+			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
+			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
+			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
+			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone"), chance: 45 },
+			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") }
+		]
+	})
+	public terrainStormstone: TerrainType;
+
+	@Register.terrain("Hole", {
+		passable: true,
+		particles: { r: 250, g: 250, b: 250 },
+		noBackground: true
+	})
+	public terrainHole: TerrainType;
+
+	////////////////////////////////////
+	// Creatures
+	//
+
+	@Register.creature("CloudBear", {
+		minhp: 18,
+		maxhp: 21,
+		minatk: 5,
+		maxatk: 13,
+		defense: new Defense(3,
+			new Resistances(
+				DamageType.Piercing, 3,
+				DamageType.Blunt, 1
+			),
+			new Vulnerabilities()
+		),
+		damageType: DamageType.Slashing | DamageType.Blunt,
+		ai: AiType.Hostile,
+		moveType: MoveType.Land | MoveType.ShallowWater | MoveType.Water | MoveType.BreakDoodads,
+		canCauseStatus: [StatusType.Bleeding],
+		spawnTiles: SpawnableTiles.None,
+		spawnReputation: 16000,
+		reputation: 300,
+		makeNoise: true,
+		loot: [{
+			item: Registry<Troposphere, ItemType>().get("itemRainbow"),
+			chance: 50
+		}]
+	}, {
+			resource: [
+				{ item: ItemType.Cotton },
+				{ item: ItemType.AnimalClaw },
+				{ item: ItemType.AnimalFat },
+				{ item: ItemType.RawMeat },
+				{ item: ItemType.RawMeat },
+				{ item: ItemType.AnimalSkull },
+				{ item: ItemType.Offal },
+				{ item: ItemType.Bone },
+				{ item: ItemType.BoneFragments }
+			],
+			decay: 2800,
+			skill: SkillType.Anatomy
+		})
+	public creatureBear: CreatureType;
+
+	@Register.creature("CloudRabbit", {
+		minhp: 3,
+		maxhp: 6,
+		minatk: 1,
+		maxatk: 2,
+		defense: new Defense(0,
+			new Resistances(),
+			new Vulnerabilities()
+		),
+		damageType: DamageType.Slashing,
+		ai: AiType.Scared,
+		moveType: MoveType.Land | MoveType.ShallowWater,
+		spawnTiles: SpawnableTiles.None,
+		reputation: -200,
+		makeNoise: true,
+		jumpOver: true,
+		loot: [{ item: Registry<Troposphere, ItemType>().get("itemSnowflakes") }]
+	}, {
+			resource: [
+				{ item: ItemType.Cotton },
+				{ item: ItemType.RawMeat },
+				{ item: ItemType.Offal },
+				{ item: ItemType.BoneFragments }
+			],
+			decay: 2400,
+			skill: SkillType.Anatomy
+		})
+	public creatureRabbit: CreatureType;
+
+	@Register.creature("Cloudling", {
+		minhp: 4,
+		maxhp: 9,
+		minatk: 2,
+		maxatk: 3,
+		defense: new Defense(0,
+			new Resistances(
+				DamageType.Piercing, 1
+			),
+			new Vulnerabilities(
+				DamageType.Blunt, 1
+			)
+		),
+		damageType: DamageType.Piercing,
+		ai: AiType.Neutral,
+		moveType: MoveType.Flying,
+		reputation: 100,
+		spawnTiles: SpawnableTiles.None,
+		loot: [
+			{
+				item: Registry<Troposphere, ItemType>().get("itemSnowflakes"),
+				chance: 75
+			},
+			{ item: ItemType.Feather }
+		],
+		lootGroup: LootGroupType.Low
+	}, {
+			resource: [
+				{ item: ItemType.Feather },
+				{ item: ItemType.Feather },
+				{ item: ItemType.TailFeathers, chance: 1 },
+				{ item: ItemType.RawChicken },
+				{ item: ItemType.BoneFragments }
+			],
+			decay: 2400,
+			skill: SkillType.Anatomy
+		})
+	public creatureCloudling: CreatureType;
+
+	@Register.creature("LightningElemental", {
+		minhp: 30,
+		maxhp: 38,
+		minatk: 11,
+		maxatk: 19,
+		defense: new Defense(5,
+			new Resistances(
+				DamageType.Fire, 100
+			),
+			new Vulnerabilities()
+		),
+		damageType: DamageType.Fire | DamageType.Blunt,
+		ai: AiType.Hostile,
+		moveType: MoveType.Flying,
+		spawnTiles: SpawnableTiles.None,
+		lootGroup: LootGroupType.High,
+		loot: [{ item: ItemType.PileOfAsh }],
+		blood: { r: 141, g: 155, b: 158 },
+		aberrantBlood: { r: 95, g: 107, b: 122 },
+		canCauseStatus: [StatusType.Bleeding],
+		spawnReputation: 32000,
+		reputation: 300,
+		makeNoise: true
+	}, {
+			resource: [{ item: ItemType.PileOfAsh }],
+			decay: 400,
+			skill: SkillType.Mining
+		})
+	public creatureLightningElemental: CreatureType;
+
+	@Register.creature("Sprite", {
+		minhp: 30,
+		maxhp: 38,
+		minatk: 11,
+		maxatk: 19,
+		defense: new Defense(5,
+			new Resistances(
+				DamageType.Fire, 100
+			),
+			new Vulnerabilities()
+		),
+		damageType: DamageType.Fire | DamageType.Blunt,
+		ai: AiType.Hostile,
+		moveType: MoveType.Flying,
+		spawnTiles: SpawnableTiles.None,
+		lootGroup: LootGroupType.High,
+		blood: { r: 238, g: 130, b: 134 },
+		canCauseStatus: [StatusType.Bleeding],
+		spawnReputation: 32000,
+		reputation: 500,
+		makeNoise: true
+	}, {
+			resource: [{ item: ItemType.Ectoplasm }],
+			decay: 100,
+			blood: false
+		})
+	public creatureSprite: CreatureType;
+
+	////////////////////////////////////
+	// Fields
+	//
+
+	@Mod.saveData<Troposphere>("Troposphere")
+	public data: ITroposphereData;
+	public firstLoad = true;
+
+	private get creaturePool() {
+		return [this.creatureBear, this.creatureRabbit, this.creatureCloudling, this.creatureLightningElemental];
+	}
 	private falling: boolean;
 
-	private itemNimbus: number;
-	private itemRainbow: number;
-	private itemRainbowGlassBottle: number;
-	private itemSnowflakes: number;
-	private itemCloudstone: number;
-
-	private doodadCloudBoulder: number;
-	private doodadStormBoulder: number;
-	private doodadRainbow: number;
-
-	private terrainCloudWater: number;
-	private terrainCloud: number;
-	private terrainCloudBoulder: number;
-	private terrainCloudstone: number;
-	private terrainStorm: number;
-	private terrainStormBoulder: number;
-	private terrainStormstone: number;
-	private terrainHole: number;
-
-	private creatureBear: number;
-	private creatureRabbit: number;
-	private creatureCloudling: number;
-	private creatureLightningElemental: number;
-	private creatureSprite: number;
-	private creaturePool: number[];
-
-	private skillFlying: number;
-
-	private data: ITroposphereData;
-	private firstLoad: boolean;
-
-	public onLoad(data: any): void {
-		this.data = data;
-
-		this.firstLoad = !this.data;
-		if (this.firstLoad) {
-			this.data = {
-				seed: new Date().getTime()
-			};
+	public initializeSaveData(data?: ITroposphereData) {
+		if (data) {
+			this.firstLoad = false;
+			return data;
 		}
 
-		this.initializeSkills();
-		this.initializeDoodads();
-		this.initializeItems();
-		this.initializeTerrain();
-		this.initializeCreatures();
+		this.firstLoad = true;
+		return {
+			seed: new Date().getTime()
+		};
 	}
 
 	public onUnload(): void {
-		const glassBottle = this.getItemByType(ItemType.GlassBottle);
+		const glassBottle = itemDescriptions[ItemType.GlassBottle];
 		if (glassBottle && glassBottle.use) {
 			glassBottle.use.pop();
 		}
-	}
-
-	public onSave(): any {
-		return this.data;
-	}
-
-	////////////////////////////////////////
-	// Utility Methods
-
-	public initializeItems() {
-		this.itemRainbow = this.addItem({
-			description: "A magical rainbow.",
-			name: "rainbow",
-			prefix: "a ",
-			weight: 0.1,
-			use: [ActionType.DrinkItem, ActionType.Build],
-			onUse: {
-				[ActionType.Build]: this.doodadRainbow
-			}
-		});
-
-		this.itemRainbowGlassBottle = this.addItem({
-			description: "A magical rainbow in a glass bottle.",
-			name: "glass bottle filled with a rainbow",
-			prefix: "a ",
-			weight: 1.0,
-			use: [ActionType.DrinkItem],
-			returnOnUse: [ItemType.GlassBottle, false]
-		});
-
-		this.itemSnowflakes = this.addItem({
-			description: "A couple of snowflakes.",
-			name: "snowflakes",
-			weight: 0.1
-		});
-
-		this.itemCloudstone = this.addItem({
-			description: "A cloudstone.",
-			name: "cloudstone",
-			prefix: "a ",
-			weight: 1
-		});
-
-		this.itemNimbus = this.addItem({
-			description: "The flying nimbus.",
-			name: "nimbus",
-			prefix: "the ",
-			use: [Registry.id(this.onNimbus)],
-			recipe: {
-				components: [
-					RecipeComponent(ItemType.Feather, 2, 2, 2),
-					RecipeComponent(this.itemCloudstone, 1, 1, 1),
-					RecipeComponent(this.itemSnowflakes, 1, 1, 1)
-				],
-				skill: this.skillFlying,
-				level: RecipeLevel.Simple,
-				reputation: 50
-			},
-			disassemble: true,
-			durability: 15
-		});
-
-		const glassBottle = this.getItemByType(ItemType.GlassBottle);
-		if (glassBottle && glassBottle.use) {
-			glassBottle.use.push(Registry.id(this.onGatherRainbow));
-		}
-	}
-
-	public initializeDoodads() {
-		this.doodadCloudBoulder = this.addDoodad({
-			name: "cloud boulder",
-			prefix: "a ",
-			particles: { r: 176, g: 153, b: 134 }
-		});
-
-		this.doodadStormBoulder = this.addDoodad({
-			name: "storm boulder",
-			prefix: "a ",
-			particles: { r: 176, g: 153, b: 134 }
-		});
-
-		this.doodadRainbow = this.addDoodad({
-			name: "rainbow",
-			prefix: "a ",
-			particles: { r: 176, g: 153, b: 134 },
-			blockMove: true
-		});
-	}
-
-	public initializeTerrain() {
-		this.terrainCloud = this.addTerrain({
-			name: "clouds",
-			passable: true,
-			particles: { r: 250, g: 250, b: 250 },
-			noBackground: true
-		});
-
-		this.terrainCloudBoulder = this.addTerrain({
-			name: "cloud boulder",
-			prefix: "a ",
-			particles: { r: 250, g: 250, b: 250 },
-			gatherSkillUse: SkillType.Lumberjacking,
-			gather: true,
-			noLos: true,
-			sound: SfxType.TreeHit,
-			leftOver: this.terrainCloudWater,
-			noGfxSwitch: true,
-			noBackground: true,
-			doodad: this.doodadCloudBoulder
-		}, this.terrainCloud);
-
-		this.addTerrainResource(this.terrainCloudBoulder, [
-			{ type: this.itemCloudstone }
-		]);
-
-		this.terrainCloudstone = this.addTerrain({
-			name: "cloudstone",
-			particles: { r: 250, g: 250, b: 250 },
-			gatherSkillUse: SkillType.Mining,
-			gather: true,
-			noLos: true,
-			sound: SfxType.RockHit,
-			leftOver: this.terrainCloud,
-			noGfxSwitch: true,
-			isMountain: true,
-			noBackground: true
-		});
-
-		this.addTerrainResource(this.terrainCloudstone, [
-			{ type: this.itemCloudstone },
-			{ type: this.itemCloudstone },
-			{ type: this.itemCloudstone },
-			{ type: this.itemCloudstone },
-			{ type: this.itemCloudstone },
-			{ type: this.itemCloudstone },
-			{ type: this.itemCloudstone, chance: 45 },
-			{ type: this.itemCloudstone }
-		]);
-
-		this.terrainStorm = this.addTerrain({
-			name: "storm",
-			prefix: "a ",
-			passable: true,
-			particles: { r: 20, g: 20, b: 20 },
-			noBackground: true
-		});
-
-		this.terrainStormBoulder = this.addTerrain({
-			name: "storm boulder",
-			prefix: "a ",
-			particles: { r: 20, g: 20, b: 20 },
-			gatherSkillUse: SkillType.Lumberjacking,
-			gather: true,
-			noLos: true,
-			sound: SfxType.TreeHit,
-			leftOver: this.terrainCloudWater,
-			noGfxSwitch: true,
-			noBackground: true,
-			doodad: this.doodadStormBoulder
-		}, this.terrainStorm);
-
-		this.addTerrainResource(this.terrainStormBoulder, [
-			{ type: this.itemCloudstone },
-			{ type: this.itemCloudstone, chance: 45 },
-			{ type: this.itemCloudstone }
-		]);
-
-		this.terrainStormstone = this.addTerrain({
-			name: "stormstone",
-			particles: { r: 20, g: 20, b: 20 },
-			gatherSkillUse: SkillType.Mining,
-			gather: true,
-			noLos: true,
-			sound: SfxType.RockHit,
-			leftOver: this.terrainStorm,
-			noGfxSwitch: true,
-			isMountain: true,
-			noBackground: true
-		});
-
-		this.addTerrainResource(this.terrainStormstone, [
-			{ type: this.itemCloudstone },
-			{ type: this.itemCloudstone },
-			{ type: this.itemCloudstone },
-			{ type: this.itemCloudstone },
-			{ type: this.itemCloudstone },
-			{ type: this.itemCloudstone },
-			{ type: this.itemCloudstone },
-			{ type: this.itemCloudstone },
-			{ type: this.itemCloudstone },
-			{ type: this.itemCloudstone },
-			{ type: this.itemCloudstone, chance: 45 },
-			{ type: this.itemCloudstone }
-		]);
-
-		this.terrainHole = this.addTerrain({
-			name: "hole",
-			prefix: "a ",
-			passable: true,
-			particles: { r: 250, g: 250, b: 250 },
-			noBackground: true
-		});
-
-		this.terrainCloudWater = this.addTerrain({
-			name: "cloud water",
-			passable: true,
-			shallowWater: true,
-			particles: { r: 47, g: 128, b: 157 },
-			freshWater: true,
-			noBackground: true,
-			tileOnConsume: this.terrainHole
-		});
-	}
-
-	public initializeCreatures() {
-		this.creatureBear = this.addCreature({
-			name: "cloud bear",
-			prefix: "a ",
-			minhp: 18,
-			maxhp: 21,
-			minatk: 5,
-			maxatk: 13,
-			defense: new Defense(3,
-				new Resistances(
-					DamageType.Piercing, 3,
-					DamageType.Blunt, 1
-				),
-				new Vulnerabilities()
-			),
-			damageType: DamageType.Slashing | DamageType.Blunt,
-			ai: AiType.Hostile,
-			moveType: MoveType.Land | MoveType.ShallowWater | MoveType.Water | MoveType.BreakDoodads,
-			canCauseStatus: [StatusType.Bleeding],
-			spawnTiles: SpawnableTiles.None,
-			spawnReputation: 16000,
-			reputation: 300,
-			makeNoise: true,
-			loot: [{
-				item: this.itemRainbow,
-				chance: 50
-			}]
-		}, {
-				resource: [
-					{ item: ItemType.Cotton },
-					{ item: ItemType.AnimalClaw },
-					{ item: ItemType.AnimalFat },
-					{ item: ItemType.RawMeat },
-					{ item: ItemType.RawMeat },
-					{ item: ItemType.AnimalSkull },
-					{ item: ItemType.Offal },
-					{ item: ItemType.Bone },
-					{ item: ItemType.BoneFragments }
-				],
-				decay: 2800,
-				skill: SkillType.Anatomy
-			});
-
-		this.creatureRabbit = this.addCreature({
-			name: "cloud rabbit",
-			prefix: "a ",
-			minhp: 3,
-			maxhp: 6,
-			minatk: 1,
-			maxatk: 2,
-			defense: new Defense(0,
-				new Resistances(),
-				new Vulnerabilities()
-			),
-			damageType: DamageType.Slashing,
-			ai: AiType.Scared,
-			moveType: MoveType.Land | MoveType.ShallowWater,
-			spawnTiles: SpawnableTiles.None,
-			reputation: -200,
-			makeNoise: true,
-			jumpOver: true,
-			loot: [{ item: this.itemSnowflakes }]
-		}, {
-				resource: [
-					{ item: ItemType.Cotton },
-					{ item: ItemType.RawMeat },
-					{ item: ItemType.Offal },
-					{ item: ItemType.BoneFragments }
-				],
-				decay: 2400,
-				skill: SkillType.Anatomy
-			});
-
-		this.creatureCloudling = this.addCreature({
-			name: "cloudling",
-			prefix: "a ",
-			minhp: 4,
-			maxhp: 9,
-			minatk: 2,
-			maxatk: 3,
-			defense: new Defense(0,
-				new Resistances(
-					DamageType.Piercing, 1
-				),
-				new Vulnerabilities(
-					DamageType.Blunt, 1
-				)
-			),
-			damageType: DamageType.Piercing,
-			ai: AiType.Neutral,
-			moveType: MoveType.Flying,
-			reputation: 100,
-			spawnTiles: SpawnableTiles.None,
-			loot: [
-				{
-					item: this.itemSnowflakes,
-					chance: 75
-				},
-				{ item: ItemType.Feather }
-			],
-			lootGroup: LootGroupType.Low
-		}, {
-				resource: [
-					{ item: ItemType.Feather },
-					{ item: ItemType.Feather },
-					{ item: ItemType.TailFeathers, chance: 1 },
-					{ item: ItemType.RawChicken },
-					{ item: ItemType.BoneFragments }
-				],
-				decay: 2400,
-				skill: SkillType.Anatomy
-			});
-
-		this.creatureLightningElemental = this.addCreature({
-			name: "lightning elemental",
-			prefix: "a ",
-			minhp: 30,
-			maxhp: 38,
-			minatk: 11,
-			maxatk: 19,
-			defense: new Defense(5,
-				new Resistances(
-					DamageType.Fire, 100
-				),
-				new Vulnerabilities()
-			),
-			damageType: DamageType.Fire | DamageType.Blunt,
-			ai: AiType.Hostile,
-			moveType: MoveType.Flying,
-			spawnTiles: SpawnableTiles.None,
-			lootGroup: LootGroupType.High,
-			loot: [{ item: ItemType.PileOfAsh }],
-			blood: { r: 141, g: 155, b: 158 },
-			aberrantBlood: { r: 95, g: 107, b: 122 },
-			canCauseStatus: [StatusType.Bleeding],
-			spawnReputation: 32000,
-			reputation: 300,
-			makeNoise: true
-		}, {
-				resource: [{ item: ItemType.PileOfAsh }],
-				decay: 400,
-				skill: SkillType.Mining,
-				name: "fulgurite",
-				prefix: "a "
-			});
-
-		this.creatureSprite = this.addCreature({
-			name: "sprite",
-			prefix: "a ",
-			minhp: 30,
-			maxhp: 38,
-			minatk: 11,
-			maxatk: 19,
-			defense: new Defense(5,
-				new Resistances(
-					DamageType.Fire, 100
-				),
-				new Vulnerabilities()
-			),
-			damageType: DamageType.Fire | DamageType.Blunt,
-			ai: AiType.Hostile,
-			moveType: MoveType.Flying,
-			spawnTiles: SpawnableTiles.None,
-			lootGroup: LootGroupType.High,
-			blood: { r: 238, g: 130, b: 134 },
-			canCauseStatus: [StatusType.Bleeding],
-			spawnReputation: 32000,
-			reputation: 500,
-			makeNoise: true
-		}, {
-				resource: [{ item: ItemType.Ectoplasm }],
-				decay: 100,
-				blood: false,
-				name: "ethereal mist",
-				prefix: ""
-			});
-
-		this.creaturePool = [this.creatureBear, this.creatureRabbit, this.creatureCloudling, this.creatureLightningElemental];
-	}
-
-	public initializeSkills() {
-		this.skillFlying = this.addSkillType({
-			name: "Flying",
-			description: "Increases your damage resistance when falling from the Troposphere."
-		});
-	}
-
-	@Register.action({
-		name: "Fly",
-		description: "Fly to and from the Troposphere."
-	})
-	public onNimbus(player: IPlayer, argument: IActionArgument) {
-		this.setFlying(player, player.z !== Troposphere.troposphereZ, true);
-		if (argument.item) {
-			argument.item.damage(argument.type!.toString());
-		}
-	}
-
-	@Register.action({
-		name: "Gather Rainbow",
-		description: "Gather a rainbow with a container."
-	})
-	public onGatherRainbow(player: IPlayer, argument: IActionArgument) {
-		const tile = player.getFacingTile();
-		const tileDoodad = tile.doodad;
-		if (!tileDoodad || tileDoodad.type !== this.doodadRainbow) {
-			player.messages.source(Source.Action)
-				.send(this.messageNoRainbow);
-			return;
-		}
-
-		player.messages.source(Source.Action, Source.Resource)
-			.send(this.messageGatheredRainbow);
-
-		game.particle.create(player.x + player.direction.x, player.y + player.direction.y, player.z, { r: 12, g: 128, b: 247 });
-
-		if (argument.item) {
-			argument.item.changeInto(this.itemRainbowGlassBottle);
-		}
-
-		doodadManager.remove(tileDoodad);
-
-		game.passTurn(player);
 	}
 
 	public setFlying(player: IPlayer, flying: boolean, passTurn: boolean): boolean {
@@ -816,26 +775,25 @@ export default class Troposphere extends Mod {
 			if (player.state !== PlayerState.Ghost) {
 				let damage = -40;
 
-				const flyingSkill = player.skills[this.skillFlying];
-				damage *= flyingSkill ? 1 - (flyingSkill.percent / 100) : 1;
-	
+				damage *= 1 - player.getSkill(this.skillFlying) / 100;
+
 				const tile = game.getTile(player.x, player.y, player.z);
 				const terrainType = TileHelpers.getType(tile);
-	
+
 				if (terrainType === TerrainType.DeepFreshWater || terrainType === TerrainType.DeepSeawater) {
 					damage *= .5;
-	
+
 				} else if (terrainType === TerrainType.FreshWater || terrainType === TerrainType.Seawater) {
 					damage *= .75;
 				}
-	
-				damage = player.damage(damage, messages[this.messageDeathByFalling]);
-	
+
+				damage = player.damage(damage, this.messageDeathByFalling);
+
 				// fall damage
 				player.messages.source(Source.Wellbeing)
 					.type(MessageType.Bad)
 					.send(this.messageFellToLand, damage);
-	
+
 				if (damage > 25 || damage > 15 && Random.chance(.5)) {
 					corpseManager.create(tileAtlas.isWater(terrainType) ? CreatureType.WaterBlood : CreatureType.Blood, player.x, player.y, player.z);
 				}
