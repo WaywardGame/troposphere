@@ -6,7 +6,7 @@
 	"compatibleMinorVersions": [
 		7
 	],
-	"file": "Troposphere.js",
+	"file": "out/Troposphere.js",
 	"languages": [
 		"lang/english"
 	],
