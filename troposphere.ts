@@ -3,6 +3,7 @@ import { ActionArgument, ActionType } from "action/IAction";
 import { ICreature, SpawnableTiles, SpawnGroup } from "creature/ICreature";
 import { AiType, EntityType } from "entity/IEntity";
 import { CreatureType, DamageType, Defense, Delay, Direction, DoodadType, HairColor, HairStyle, ItemType, LootGroupType, MoveType, PlayerState, RecipeLevel, RenderFlag, Resistances, SfxType, SkillType, SkinColor, StatusType, TerrainType, Vulnerabilities, WorldZ } from "Enums";
+import { RenderSource } from "game/IGame";
 import { itemDescriptions, RecipeComponent } from "item/Items";
 import Message from "language/dictionary/Message";
 import Note from "language/dictionary/Note";
@@ -703,7 +704,7 @@ export default class Troposphere extends Mod {
 		if (this.falling) {
 			const turnProgress = 1 - Math.min(1, Math.max(0, (localPlayer.movementFinishTime - game.absoluteTime) / (Delay.Movement * game.interval)));
 			tileScale = this.easeInCubic(turnProgress, tileScale * 0.25, tileScale * 0.75, 1.0);
-			game.updateRender = true;
+			game.updateRender(RenderSource.Mod);
 
 		} else {
 			tileScale *= 0.25;
