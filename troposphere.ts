@@ -1,6 +1,6 @@
 import { Action } from "action/Action";
 import { ActionArgument, ActionType } from "action/IAction";
-import { ICreature, SpawnableTiles, SpawnGroup } from "creature/ICreature";
+import { ICreature, SpawnGroup, TileGroup } from "creature/ICreature";
 import { AiType, EntityType } from "entity/IEntity";
 import { CreatureType, DamageType, Defense, Delay, Direction, DoodadType, HairColor, HairStyle, ItemType, LootGroupType, MoveType, PlayerState, RecipeLevel, RenderFlag, Resistances, SfxType, SkillType, SkinColor, StatusType, TerrainType, Vulnerabilities, WorldZ } from "Enums";
 import { RenderSource } from "game/IGame";
@@ -136,8 +136,7 @@ export default class Troposphere extends Mod {
 			reputation: 50
 		},
 		disassemble: true,
-		durability: 15,
-		weight: 1.0
+		durability: 15
 	})
 	public itemNimbus: ItemType;
 
@@ -328,7 +327,7 @@ export default class Troposphere extends Mod {
 		ai: AiType.Hostile,
 		moveType: MoveType.Land | MoveType.ShallowWater | MoveType.Water | MoveType.BreakDoodads,
 		canCauseStatus: [StatusType.Bleeding],
-		spawnTiles: SpawnableTiles.None,
+		spawnTiles: TileGroup.None,
 		spawnReputation: 16000,
 		reputation: 300,
 		makeNoise: true,
@@ -365,7 +364,7 @@ export default class Troposphere extends Mod {
 		damageType: DamageType.Slashing,
 		ai: AiType.Scared,
 		moveType: MoveType.Land | MoveType.ShallowWater,
-		spawnTiles: SpawnableTiles.None,
+		spawnTiles: TileGroup.None,
 		reputation: -200,
 		makeNoise: true,
 		jumpOver: true,
@@ -399,7 +398,7 @@ export default class Troposphere extends Mod {
 		ai: AiType.Neutral,
 		moveType: MoveType.Flying,
 		reputation: 100,
-		spawnTiles: SpawnableTiles.None,
+		spawnTiles: TileGroup.None,
 		loot: [
 			{
 				item: Registry<Troposphere, ItemType>().get("itemSnowflakes"),
@@ -435,7 +434,7 @@ export default class Troposphere extends Mod {
 		damageType: DamageType.Fire | DamageType.Blunt,
 		ai: AiType.Hostile,
 		moveType: MoveType.Flying,
-		spawnTiles: SpawnableTiles.None,
+		spawnTiles: TileGroup.None,
 		lootGroup: LootGroupType.High,
 		loot: [{ item: ItemType.PileOfAsh }],
 		blood: { r: 141, g: 155, b: 158 },
@@ -465,7 +464,7 @@ export default class Troposphere extends Mod {
 		damageType: DamageType.Fire | DamageType.Blunt,
 		ai: AiType.Hostile,
 		moveType: MoveType.Flying,
-		spawnTiles: SpawnableTiles.None,
+		spawnTiles: TileGroup.None,
 		lootGroup: LootGroupType.High,
 		blood: { r: 238, g: 130, b: 134 },
 		canCauseStatus: [StatusType.Bleeding],
