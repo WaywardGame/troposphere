@@ -1,23 +1,37 @@
-import { Action } from "action/Action";
-import { ActionArgument, ActionType } from "action/IAction";
-import { ICreature, SpawnGroup, TileGroup } from "creature/ICreature";
-import { AiType, EntityType } from "entity/IEntity";
-import { CreatureType, DamageType, Defense, Delay, Direction, DoodadType, HairColor, HairStyle, ItemType, LootGroupType, MoveType, PlayerState, RecipeLevel, RenderFlag, Resistances, SfxType, SkillType, SkinColor, StatusType, TerrainType, Vulnerabilities, WorldZ } from "Enums";
+import { SfxType } from "audio/IAudio";
+import { DoodadType } from "doodad/IDoodad";
+import { Action } from "entity/action/Action";
+import { ActionArgument, ActionType } from "entity/action/IAction";
+import Creature from "entity/creature/Creature";
+import { CreatureType, SpawnGroup, TileGroup } from "entity/creature/ICreature";
+import Human from "entity/Human";
+import { AiType, DamageType, Defense, EntityType, MoveType, Resistances, StatusType, Vulnerabilities } from "entity/IEntity";
+import { Delay, HairColor, HairStyle, SkillType, SkinColor } from "entity/IHuman";
+import { Source } from "entity/player/IMessageManager";
+import { PlayerState } from "entity/player/IPlayer";
+import { MessageType } from "entity/player/MessageManager";
+import Player from "entity/player/Player";
+import { EventHandler } from "event/EventManager";
 import { RenderSource } from "game/IGame";
+import { WorldZ } from "game/WorldZ";
+import { ItemType, RecipeLevel } from "item/IItem";
 import { itemDescriptions, RecipeComponent } from "item/Items";
+import { LootGroupType } from "item/LootGroups";
 import Message from "language/dictionary/Message";
 import Note from "language/dictionary/Note";
 import { HookMethod } from "mod/IHookHost";
 import Mod from "mod/Mod";
 import Register, { Registry } from "mod/ModRegistry";
+import WalkToTileHandler from "newui/screen/screens/game/util/movement/WalkToTileHandler";
 import { HelpArticle } from "newui/screen/screens/menu/menus/help/HelpArticleDescriptions";
-import { Source } from "player/IMessageManager";
-import { IPlayer } from "player/IPlayer";
-import { MessageType } from "player/MessageManager";
 import IWorld from "renderer/IWorld";
-import { ITile } from "tile/ITerrain";
+import { RenderFlag } from "renderer/IWorldRenderer";
+import WorldRenderer from "renderer/WorldRenderer";
+import { ITile, TerrainType } from "tile/ITerrain";
 import Terrains from "tile/Terrains";
 import Enums from "utilities/enum/Enums";
+import { IInjectionApi, Inject, InjectionPosition } from "utilities/Inject";
+import { Direction } from "utilities/math/Direction";
 import { IVector2 } from "utilities/math/IVector";
 import Vector2 from "utilities/math/Vector2";
 import Vector3 from "utilities/math/Vector3";
@@ -44,12 +58,12 @@ export default class Troposphere extends Mod {
 
 	@Register.helpArticle("Flying", {
 		image: true,
-		section: "Troposphere"
+		section: "Troposphere",
 	})
 	public readonly flyingHelpArticle: HelpArticle;
 
 	@Register.note("Flying", {
-		learnMore: Registry<Troposphere, HelpArticle>().get("flyingHelpArticle")
+		learnMore: Registry<Troposphere>().get("flyingHelpArticle"),
 	})
 	public readonly flyingNote: Note;
 
@@ -124,19 +138,19 @@ export default class Troposphere extends Mod {
 	//
 
 	@Register.item("Nimbus", {
-		use: [Registry<Troposphere, ActionType>().get("actionFly")],
+		use: [Registry<Troposphere>().get("actionFly")],
 		recipe: {
 			components: [
 				RecipeComponent(ItemType.Feather, 2, 2, 2),
-				RecipeComponent(Registry<Troposphere, ItemType>().get("itemCloudstone"), 1, 1, 1),
-				RecipeComponent(Registry<Troposphere, ItemType>().get("itemSnowflakes"), 1, 1, 1)
+				RecipeComponent(Registry<Troposphere>().get("itemCloudstone"), 1, 1, 1),
+				RecipeComponent(Registry<Troposphere>().get("itemSnowflakes"), 1, 1, 1),
 			],
-			skill: Registry<Troposphere, SkillType>().get("skillFlying"),
+			skill: Registry<Troposphere>().get("skillFlying"),
 			level: RecipeLevel.Simple,
-			reputation: 50
+			reputation: 50,
 		},
 		disassemble: true,
-		durability: 15
+		durability: 15,
 	})
 	public itemNimbus: ItemType;
 
@@ -144,25 +158,26 @@ export default class Troposphere extends Mod {
 		weight: 0.1,
 		use: [ActionType.DrinkItem, ActionType.Build],
 		onUse: {
-			[ActionType.Build]: Registry<Troposphere, DoodadType>().get("doodadRainbow")
-		}
+			[ActionType.Build]: Registry<Troposphere>().get("doodadRainbow"),
+		},
 	})
 	public itemRainbow: ItemType;
 
 	@Register.item("RainbowGlassBottle", {
 		weight: 1.0,
 		use: [ActionType.DrinkItem],
-		returnOnUse: [ItemType.GlassBottle, false]
+		returnOnUse: [ItemType.GlassBottle, false],
 	})
 	public itemRainbowGlassBottle: ItemType;
 
 	@Register.item("Snowflakes", {
-		weight: 0.1
+		weight: 0.1,
+		decayMax: 500,
 	})
 	public itemSnowflakes: ItemType;
 
 	@Register.item("Cloudstone", {
-		weight: 1
+		weight: 1,
 	})
 	public itemCloudstone: ItemType;
 
@@ -171,18 +186,18 @@ export default class Troposphere extends Mod {
 	//
 
 	@Register.doodad("CloudBoulder", {
-		particles: { r: 176, g: 153, b: 134 }
+		particles: { r: 201, g: 224, b: 228 },
 	})
 	public doodadCloudBoulder: DoodadType;
 
 	@Register.doodad("StormBoulder", {
-		particles: { r: 176, g: 153, b: 134 }
+		particles: { r: 141, g: 155, b: 158 },
 	})
 	public doodadStormBoulder: DoodadType;
 
 	@Register.doodad("Rainbow", {
-		particles: { r: 176, g: 153, b: 134 },
-		blockMove: true
+		particles: { r: 90, g: 48, b: 141 },
+		blockMove: true,
 	})
 	public doodadRainbow: DoodadType;
 
@@ -193,117 +208,117 @@ export default class Troposphere extends Mod {
 	@Register.terrain("CloudWater", {
 		passable: true,
 		shallowWater: true,
-		particles: { r: 47, g: 128, b: 157 },
+		particles: { r: 55, g: 192, b: 255 },
 		freshWater: true,
 		noBackground: true,
-		tileOnConsume: Registry<Troposphere, TerrainType>().get("terrainHole")
+		tileOnConsume: Registry<Troposphere>().get("terrainHole"),
 	})
 	public terrainCloudWater: TerrainType;
 
 	@Register.terrain("Clouds", {
 		passable: true,
-		particles: { r: 250, g: 250, b: 250 },
-		noBackground: true
+		particles: { r: 201, g: 224, b: 228 },
+		noBackground: true,
 	})
 	public terrainCloud: TerrainType;
 
 	@Register.terrain("CloudBoulder", {
-		particles: { r: 250, g: 250, b: 250 },
+		particles: { r: 201, g: 224, b: 228 },
 		gatherSkillUse: SkillType.Lumberjacking,
 		gather: true,
 		noLos: true,
 		sound: SfxType.TreeHit,
-		leftOver: Registry<Troposphere, TerrainType>().get("terrainCloudWater"),
+		leftOver: Registry<Troposphere>().get("terrainCloudWater"),
 		noGfxSwitch: true,
 		noBackground: true,
-		doodad: Registry<Troposphere, DoodadType>().get("doodadCloudBoulder"),
+		doodad: Registry<Troposphere>().get("doodadCloudBoulder"),
 		resources: [
-			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") }
+			{ type: Registry<Troposphere>().get("itemCloudstone") },
 		],
-		terrainType: Registry<Troposphere, TerrainType>().get("terrainCloud")
+		terrainType: Registry<Troposphere>().get("terrainCloud"),
 	})
 	public terrainCloudBoulder: TerrainType;
 
 	@Register.terrain("Cloudstone", {
-		particles: { r: 250, g: 250, b: 250 },
+		particles: { r: 201, g: 224, b: 228 },
 		gatherSkillUse: SkillType.Mining,
 		gather: true,
 		noLos: true,
 		sound: SfxType.RockHit,
-		leftOver: Registry<Troposphere, TerrainType>().get("terrainCloud"),
+		leftOver: Registry<Troposphere>().get("terrainCloud"),
 		noGfxSwitch: true,
 		isMountain: true,
 		noBackground: true,
 		resources: [
-			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
-			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
-			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
-			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
-			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
-			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
-			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone"), chance: 45 },
-			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") }
-		]
+			{ type: Registry<Troposphere>().get("itemCloudstone") },
+			{ type: Registry<Troposphere>().get("itemCloudstone") },
+			{ type: Registry<Troposphere>().get("itemCloudstone") },
+			{ type: Registry<Troposphere>().get("itemCloudstone") },
+			{ type: Registry<Troposphere>().get("itemCloudstone") },
+			{ type: Registry<Troposphere>().get("itemCloudstone") },
+			{ type: Registry<Troposphere>().get("itemCloudstone"), chance: 45 },
+			{ type: Registry<Troposphere>().get("itemCloudstone") },
+		],
 	})
 	public terrainCloudstone: TerrainType;
 
 	@Register.terrain("Storm", {
 		passable: true,
-		particles: { r: 20, g: 20, b: 20 },
-		noBackground: true
+		particles: { r: 141, g: 155, b: 158 },
+		noBackground: true,
 	})
 	public terrainStorm: TerrainType;
 
 	@Register.terrain("StormBoulder", {
-		particles: { r: 20, g: 20, b: 20 },
+		particles: { r: 141, g: 155, b: 158 },
 		gatherSkillUse: SkillType.Lumberjacking,
 		gather: true,
 		noLos: true,
 		sound: SfxType.TreeHit,
-		leftOver: Registry<Troposphere, TerrainType>().get("terrainCloudWater"),
+		leftOver: Registry<Troposphere>().get("terrainCloudWater"),
 		noGfxSwitch: true,
 		noBackground: true,
-		doodad: Registry<Troposphere, DoodadType>().get("doodadStormBoulder"),
+		doodad: Registry<Troposphere>().get("doodadStormBoulder"),
 		resources: [
-			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
-			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone"), chance: 45 },
-			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") }
+			{ type: Registry<Troposphere>().get("itemCloudstone") },
+			{ type: Registry<Troposphere>().get("itemCloudstone"), chance: 45 },
+			{ type: Registry<Troposphere>().get("itemCloudstone") },
 		],
-		terrainType: Registry<Troposphere, TerrainType>().get("terrainStorm")
+		terrainType: Registry<Troposphere>().get("terrainStorm"),
 	})
 	public terrainStormBoulder: TerrainType;
 
 	@Register.terrain("Stormstone", {
-		particles: { r: 20, g: 20, b: 20 },
+		particles: { r: 141, g: 155, b: 158 },
 		gatherSkillUse: SkillType.Mining,
 		gather: true,
 		noLos: true,
 		sound: SfxType.RockHit,
-		leftOver: Registry<Troposphere, TerrainType>().get("terrainStorm"),
+		leftOver: Registry<Troposphere>().get("terrainStorm"),
 		noGfxSwitch: true,
 		isMountain: true,
 		noBackground: true,
 		resources: [
-			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
-			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
-			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
-			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
-			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
-			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
-			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
-			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
-			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
-			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") },
-			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone"), chance: 45 },
-			{ type: Registry<Troposphere, ItemType>().get("itemCloudstone") }
-		]
+			{ type: Registry<Troposphere>().get("itemCloudstone") },
+			{ type: Registry<Troposphere>().get("itemCloudstone") },
+			{ type: Registry<Troposphere>().get("itemCloudstone") },
+			{ type: Registry<Troposphere>().get("itemCloudstone") },
+			{ type: Registry<Troposphere>().get("itemCloudstone") },
+			{ type: Registry<Troposphere>().get("itemCloudstone") },
+			{ type: Registry<Troposphere>().get("itemCloudstone") },
+			{ type: Registry<Troposphere>().get("itemCloudstone") },
+			{ type: Registry<Troposphere>().get("itemCloudstone") },
+			{ type: Registry<Troposphere>().get("itemCloudstone") },
+			{ type: Registry<Troposphere>().get("itemCloudstone"), chance: 45 },
+			{ type: Registry<Troposphere>().get("itemCloudstone") },
+		],
 	})
 	public terrainStormstone: TerrainType;
 
 	@Register.terrain("Hole", {
 		passable: true,
-		particles: { r: 250, g: 250, b: 250 },
-		noBackground: true
+		particles: { r: 255, g: 255, b: 255 },
+		noBackground: true,
 	})
 	public terrainHole: TerrainType;
 
@@ -319,9 +334,9 @@ export default class Troposphere extends Mod {
 		defense: new Defense(3,
 			new Resistances(
 				DamageType.Piercing, 3,
-				DamageType.Blunt, 1
+				DamageType.Blunt, 1,
 			),
-			new Vulnerabilities()
+			new Vulnerabilities(),
 		),
 		damageType: DamageType.Slashing | DamageType.Blunt,
 		ai: AiType.Hostile,
@@ -332,24 +347,24 @@ export default class Troposphere extends Mod {
 		reputation: 300,
 		makeNoise: true,
 		loot: [{
-			item: Registry<Troposphere, ItemType>().get("itemRainbow"),
-			chance: 50
-		}]
+			item: Registry<Troposphere>().get("itemRainbow"),
+			chance: 50,
+		}],
 	}, {
-			resource: [
-				{ item: ItemType.Cotton },
-				{ item: ItemType.AnimalClaw },
-				{ item: ItemType.AnimalFat },
-				{ item: ItemType.RawMeat },
-				{ item: ItemType.RawMeat },
-				{ item: ItemType.AnimalSkull },
-				{ item: ItemType.Offal },
-				{ item: ItemType.Bone },
-				{ item: ItemType.BoneFragments }
-			],
-			decay: 2800,
-			skill: SkillType.Anatomy
-		})
+		resource: [
+			{ item: ItemType.Cotton },
+			{ item: ItemType.AnimalClaw },
+			{ item: ItemType.AnimalFat },
+			{ item: ItemType.RawMeat },
+			{ item: ItemType.RawMeat },
+			{ item: ItemType.AnimalSkull },
+			{ item: ItemType.Offal },
+			{ item: ItemType.Bone },
+			{ item: ItemType.BoneFragments },
+		],
+		decay: 2800,
+		skill: SkillType.Anatomy,
+	})
 	public creatureBear: CreatureType;
 
 	@Register.creature("CloudRabbit", {
@@ -359,7 +374,7 @@ export default class Troposphere extends Mod {
 		maxatk: 2,
 		defense: new Defense(0,
 			new Resistances(),
-			new Vulnerabilities()
+			new Vulnerabilities(),
 		),
 		damageType: DamageType.Slashing,
 		ai: AiType.Scared,
@@ -368,17 +383,17 @@ export default class Troposphere extends Mod {
 		reputation: -200,
 		makeNoise: true,
 		jumpOver: true,
-		loot: [{ item: Registry<Troposphere, ItemType>().get("itemSnowflakes") }]
+		loot: [{ item: Registry<Troposphere>().get("itemSnowflakes") }],
 	}, {
-			resource: [
-				{ item: ItemType.Cotton },
-				{ item: ItemType.RawMeat },
-				{ item: ItemType.Offal },
-				{ item: ItemType.BoneFragments }
-			],
-			decay: 2400,
-			skill: SkillType.Anatomy
-		})
+		resource: [
+			{ item: ItemType.Cotton },
+			{ item: ItemType.RawMeat },
+			{ item: ItemType.Offal },
+			{ item: ItemType.BoneFragments },
+		],
+		decay: 2400,
+		skill: SkillType.Anatomy,
+	})
 	public creatureRabbit: CreatureType;
 
 	@Register.creature("Cloudling", {
@@ -388,11 +403,11 @@ export default class Troposphere extends Mod {
 		maxatk: 3,
 		defense: new Defense(0,
 			new Resistances(
-				DamageType.Piercing, 1
+				DamageType.Piercing, 1,
 			),
 			new Vulnerabilities(
-				DamageType.Blunt, 1
-			)
+				DamageType.Blunt, 1,
+			),
 		),
 		damageType: DamageType.Piercing,
 		ai: AiType.Neutral,
@@ -401,23 +416,23 @@ export default class Troposphere extends Mod {
 		spawnTiles: TileGroup.None,
 		loot: [
 			{
-				item: Registry<Troposphere, ItemType>().get("itemSnowflakes"),
-				chance: 75
+				item: Registry<Troposphere>().get("itemSnowflakes"),
+				chance: 75,
 			},
-			{ item: ItemType.Feather }
+			{ item: ItemType.Feather },
 		],
-		lootGroup: LootGroupType.Low
+		lootGroup: LootGroupType.Low,
 	}, {
-			resource: [
-				{ item: ItemType.Feather },
-				{ item: ItemType.Feather },
-				{ item: ItemType.TailFeathers, chance: 1 },
-				{ item: ItemType.RawChicken },
-				{ item: ItemType.BoneFragments }
-			],
-			decay: 2400,
-			skill: SkillType.Anatomy
-		})
+		resource: [
+			{ item: ItemType.Feather },
+			{ item: ItemType.Feather },
+			{ item: ItemType.TailFeathers, chance: 1 },
+			{ item: ItemType.RawChicken },
+			{ item: ItemType.BoneFragments },
+		],
+		decay: 2400,
+		skill: SkillType.Anatomy,
+	})
 	public creatureCloudling: CreatureType;
 
 	@Register.creature("LightningElemental", {
@@ -427,9 +442,9 @@ export default class Troposphere extends Mod {
 		maxatk: 19,
 		defense: new Defense(5,
 			new Resistances(
-				DamageType.Fire, 100
+				DamageType.Fire, 100,
 			),
-			new Vulnerabilities()
+			new Vulnerabilities(),
 		),
 		damageType: DamageType.Fire | DamageType.Blunt,
 		ai: AiType.Hostile,
@@ -442,12 +457,12 @@ export default class Troposphere extends Mod {
 		canCauseStatus: [StatusType.Bleeding],
 		spawnReputation: 32000,
 		reputation: 300,
-		makeNoise: true
+		makeNoise: true,
 	}, {
-			resource: [{ item: ItemType.PileOfAsh }],
-			decay: 400,
-			skill: SkillType.Mining
-		})
+		resource: [{ item: ItemType.PileOfAsh }],
+		decay: 400,
+		skill: SkillType.Mining,
+	})
 	public creatureLightningElemental: CreatureType;
 
 	@Register.creature("Sprite", {
@@ -457,9 +472,9 @@ export default class Troposphere extends Mod {
 		maxatk: 19,
 		defense: new Defense(5,
 			new Resistances(
-				DamageType.Fire, 100
+				DamageType.Fire, 100,
 			),
-			new Vulnerabilities()
+			new Vulnerabilities(),
 		),
 		damageType: DamageType.Fire | DamageType.Blunt,
 		ai: AiType.Hostile,
@@ -470,12 +485,11 @@ export default class Troposphere extends Mod {
 		canCauseStatus: [StatusType.Bleeding],
 		spawnReputation: 32000,
 		reputation: 500,
-		makeNoise: true
+		makeNoise: true,
 	}, {
-			resource: [{ item: ItemType.Ectoplasm }],
-			decay: 100,
-			blood: false
-		})
+		resource: [{ item: ItemType.Ectoplasm }],
+		decay: 100,
+	})
 	public creatureSprite: CreatureType;
 
 	////////////////////////////////////
@@ -491,6 +505,7 @@ export default class Troposphere extends Mod {
 	}
 	private falling: boolean;
 
+	@Override
 	public initializeSaveData(data?: ITroposphereData) {
 		if (data) {
 			this.firstLoad = false;
@@ -499,10 +514,19 @@ export default class Troposphere extends Mod {
 
 		this.firstLoad = true;
 		return {
-			seed: new Date().getTime()
+			seed: new Date().getTime(),
 		};
 	}
 
+	@Override
+	public onLoad(): void {
+		const glassBottle = itemDescriptions[ItemType.GlassBottle];
+		if (glassBottle && glassBottle.use) {
+			glassBottle.use.push(this.actionGatherRainbow);
+		}
+	}
+
+	@Override
 	public onUnload(): void {
 		const glassBottle = itemDescriptions[ItemType.GlassBottle];
 		if (glassBottle && glassBottle.use) {
@@ -510,7 +534,7 @@ export default class Troposphere extends Mod {
 		}
 	}
 
-	public setFlying(player: IPlayer, flying: boolean, passTurn: boolean): boolean {
+	public setFlying(player: Player, flying: boolean, passTurn: boolean): boolean {
 		const z = !flying ? WorldZ.Overworld : Troposphere.troposphereZ;
 
 		const openTile = TileHelpers.findMatchingTile(player, this.isFlyableTile.bind(this));
@@ -533,7 +557,7 @@ export default class Troposphere extends Mod {
 		player.skillGain(this.skillFlying);
 
 		player.notes.write(this.flyingNote, {
-			hasHair: player.customization.hairStyle !== "None"
+			hasHair: player.customization.hairStyle !== "None",
 		});
 
 		if (passTurn) {
@@ -570,17 +594,17 @@ export default class Troposphere extends Mod {
 	////////////////////////////////////////
 	// Hooks
 
-	@HookMethod
+	@Override @HookMethod
 	public onCreateWorld(world: IWorld): void {
 		world.addLayer(Troposphere.troposphereZ);
 	}
 
-	@HookMethod
+	@Override @HookMethod
 	public preLoadWorldDifferences(generateNewWorld: boolean) {
 		// percentage
-		const doodadChance = 0.6;
-		const doodadChanceStorm = 0.2;
-		const doodadChanceRainbow = 0.1;
+		const boulderChance = 0.6;
+		const stormChance = 0.2;
+		const rainbowChance = 0.15;
 
 		const terrainHoleChance = 0.02;
 
@@ -617,7 +641,7 @@ export default class Troposphere extends Mod {
 					case TerrainType.Seawater:
 					case TerrainType.FreshWater:
 					case TerrainType.ShallowSeawater:
-						if (Random.float() <= doodadChanceStorm) {
+						if (Random.float() <= stormChance) {
 							terrainType = this.terrainStormBoulder;
 
 						} else {
@@ -627,7 +651,7 @@ export default class Troposphere extends Mod {
 						break;
 
 					case TerrainType.ShallowFreshWater:
-						if (Random.float() <= doodadChanceRainbow) {
+						if (Random.float() <= rainbowChance) {
 							terrainType = this.terrainCloud;
 							doodadManager.create(this.doodadRainbow, x, y, Troposphere.troposphereZ);
 
@@ -640,7 +664,7 @@ export default class Troposphere extends Mod {
 					default:
 						const doodad = overworldTile.doodad;
 						if (doodad && doodad.canGrow()) {
-							if (Random.float() <= doodadChance) {
+							if (Random.float() <= boulderChance) {
 								terrainType = this.terrainCloudBoulder;
 
 							} else {
@@ -694,7 +718,7 @@ export default class Troposphere extends Mod {
 		}
 	}
 
-	@HookMethod
+	@Override @HookMethod
 	public preRenderWorld(tileScale: number, viewWidth: number, viewHeight: number) {
 		if (localPlayer.z !== Troposphere.troposphereZ) {
 			return;
@@ -721,14 +745,14 @@ export default class Troposphere extends Mod {
 		renderer.layers[WorldZ.Overworld].renderFullbright(position.x, position.y, tileScale, viewWidth, viewHeight, false);
 	}
 
-	@HookMethod
+	@Override @HookMethod
 	public shouldRender() {
 		if (this.falling) {
 			return RenderFlag.Player;
 		}
 	}
 
-	@HookMethod
+	@Override @HookMethod
 	public onGameStart(isLoadingSave: boolean): void {
 		if ((!isLoadingSave || this.firstLoad) && !multiplayer.isConnected()) {
 			// give nimbus
@@ -736,16 +760,16 @@ export default class Troposphere extends Mod {
 		}
 	}
 
-	@HookMethod
-	public onPlayerJoin(player: IPlayer): void {
+	@Override @HookMethod
+	public onPlayerJoin(player: Player): void {
 		if (itemManager.getItemInContainer(player.inventory, this.itemNimbus) === undefined) {
 			// give nimbus if they don't have one
 			player.createItemInInventory(this.itemNimbus);
 		}
 	}
 
-	@HookMethod
-	public onMove(player: IPlayer, nextX: number, nextY: number, tile: ITile, direction: Direction): boolean | undefined {
+	@Override @HookMethod
+	public onMove(player: Player, nextX: number, nextY: number, tile: ITile, direction: Direction): boolean | undefined {
 		if (player.z !== Troposphere.troposphereZ) {
 			return;
 		}
@@ -762,8 +786,8 @@ export default class Troposphere extends Mod {
 		}
 	}
 
-	@HookMethod
-	public onMoveComplete(player: IPlayer) {
+	@Override @HookMethod
+	public onMoveComplete(player: Player) {
 		if (player.z !== Troposphere.troposphereZ) {
 			return;
 		}
@@ -795,7 +819,7 @@ export default class Troposphere extends Mod {
 					.send(this.messageFellToLand, damage);
 
 				if (damage > 25 || damage > 15 && Random.chance(.5)) {
-					corpseManager.create(tileAtlas.isWater(terrainType) ? CreatureType.WaterBlood : CreatureType.Blood, player.x, player.y, player.z);
+					tileEventManager.createBlood(player.x, player.y, player.z);
 				}
 			}
 
@@ -804,19 +828,7 @@ export default class Troposphere extends Mod {
 		}
 	}
 
-	@HookMethod
-	public canConsumeItem(player: IPlayer, itemType: ItemType, actionType: ActionType): boolean | undefined {
-		if (itemType === this.itemRainbowGlassBottle && actionType === ActionType.DrinkItem) {
-			player.customization = {
-				hairStyle: HairStyle[Enums.getRandom(HairStyle)] as keyof typeof HairStyle,
-				hairColor: HairColor[Enums.getRandom(HairColor)] as keyof typeof HairColor,
-				skinColor: SkinColor[Enums.getRandom(SkinColor)] as keyof typeof SkinColor
-			};
-			return true;
-		}
-	}
-
-	@HookMethod
+	@Override @HookMethod
 	public onSpawnCreatureFromGroup(creatureGroup: SpawnGroup, creaturePool: CreatureType[], x: number, y: number, z: number): boolean | undefined {
 		if (z !== Troposphere.troposphereZ) {
 			return;
@@ -825,15 +837,31 @@ export default class Troposphere extends Mod {
 		creaturePool.push.apply(creaturePool, this.creaturePool);
 	}
 
-	@HookMethod
-	public canCreatureMove(creature: ICreature, tile?: ITile): boolean | undefined {
+	////////////////////////////////////
+	// Event Handlers
+	//
+
+	@EventHandler(Human, "canConsumeItem")
+	protected canConsumeItem(player: Player, itemType: ItemType, actionType: ActionType): boolean | undefined {
+		if (itemType === this.itemRainbowGlassBottle && actionType === ActionType.DrinkItem) {
+			player.customization = {
+				hairStyle: HairStyle[Enums.getRandom(HairStyle)] as keyof typeof HairStyle,
+				hairColor: HairColor[Enums.getRandom(HairColor)] as keyof typeof HairColor,
+				skinColor: SkinColor[Enums.getRandom(SkinColor)] as keyof typeof SkinColor,
+			};
+			return true;
+		}
+	}
+
+	@EventHandler(Creature, "canMove")
+	protected canCreatureMove(creature: Creature, tile?: ITile): boolean | undefined {
 		if (tile && TileHelpers.getType(tile) === this.terrainHole) {
 			return creature.type !== this.creatureBear && creature.type !== this.creatureRabbit;
 		}
 	}
 
-	@HookMethod
-	public canCreatureAttack(creature: ICreature, enemy: IPlayer | ICreature): boolean | undefined {
+	@EventHandler(Creature, "canAttack")
+	protected canCreatureAttack(creature: Creature, enemy: Player | Creature): boolean | undefined {
 		if (creature.type !== this.creatureSprite) {
 			return;
 		}
@@ -842,8 +870,8 @@ export default class Troposphere extends Mod {
 		creatureObj.justAttacked = true;
 	}
 
-	@HookMethod
-	public canSeeCreature(creature: ICreature, tile: ITile): boolean | undefined {
+	@EventHandler(WorldRenderer, "canSeeCreature")
+	protected canSeeCreature(_: any, creature: Creature, tile: ITile): boolean | undefined {
 		if (creature.type !== this.creatureSprite) {
 			return;
 		}
@@ -865,28 +893,34 @@ export default class Troposphere extends Mod {
 		return false;
 	}
 
-	@HookMethod
-	public getFogColor() {
-		if (localPlayer.z === Troposphere.troposphereZ) {
-			const ambientLightLevel = game.getAmbientLightLevel(localPlayer.z);
-			const ambientLightColor = new Vector3(renderer.getAmbientColor());
-			if (ambientLightLevel > 0.5) {
-				return Vector3.mix(ambientLightColor, Vector3.ONE, ambientLightLevel * 2 - 1).xyz;
-
-			} else {
-				return Vector3.mix(Vector3.ZERO, ambientLightColor, ambientLightLevel * 2).xyz;
-			}
-		}
-
-		return undefined;
-	}
-
-	@HookMethod
-	public getTilePenalty(penalty: number, tile: ITile) {
+	@EventHandler(WalkToTileHandler, "getTilePenalty")
+	protected getTilePenalty(_: any, penalty: number, tile: ITile) {
 		if (TileHelpers.getType(tile) === this.terrainHole) {
 			penalty += 1000;
 		}
 
 		return penalty;
+	}
+
+	////////////////////////////////////
+	// Injections
+	//
+
+	@Inject(WorldRenderer, "getFogColor", InjectionPosition.Pre)
+	protected getFogColor(api: IInjectionApi<WorldRenderer, "getFogColor">) {
+		if (localPlayer.z !== Troposphere.troposphereZ) {
+			return;
+		}
+
+		api.cancelled = true;
+
+		const ambientLightLevel = game.getAmbientLightLevel(localPlayer.z);
+		const ambientLightColor = new Vector3(api.executingInstance.calculateAmbientColor());
+		if (ambientLightLevel > 0.5) {
+			api.returnValue = Vector3.mix(ambientLightColor, Vector3.ONE, ambientLightLevel * 2 - 1).xyz;
+
+		} else {
+			api.returnValue = Vector3.mix(Vector3.ZERO, ambientLightColor, ambientLightLevel * 2).xyz;
+		}
 	}
 }

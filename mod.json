@@ -3,9 +3,7 @@
 	"description": "Adds a magical world of clouds!",
 	"version": "1.3.2",
 	"author": "Spacetech",
-	"compatibleMinorVersions": [
-		7
-	],
+	"waywardVersion": "2.8.0-beta",
 	"file": "out/Troposphere.js",
 	"languages": [
 		"lang/english"

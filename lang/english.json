@@ -26,16 +26,16 @@
 			"modTroposphereNoRainbow": "You can only gather rainbows by standing infront of them."
 		},
 		"item": {
-			"modTroposphereNimbus": ["nimbus", "The flying nimbus."],
-			"modTroposphereRainbow": ["rainbow", "A magical rainbow."],
-			"modTroposphereRainbowGlassBottle": ["glass bottle filled with a rainbow", "A magical rainbow in a glass bottle."],
-			"modTroposphereSnowflakes": ["snowflakes", "A couple of snowflakes"],
-			"modTroposphereCloudstone": ["cloudstone", "A cloudstone."]
+			"modTroposphereNimbus": ["nimbus", "The flying nimbus, a magical cloud that lifts you up to the troposphere."],
+			"modTroposphereRainbow": ["rainbow", "A magical rainbow that somehow can occupy your inventory. Taste the Rainbow®."],
+			"modTroposphereRainbowGlassBottle": ["glass bottle filled with a rainbow", "A magical rainbow trapped in a glass bottle. It almost looks good enough to drink."],
+			"modTroposphereSnowflakes": ["snowflakes", "A couple of snowflakes that can somehow resist instantly melting in your grasp."],
+			"modTroposphereCloudstone": ["cloudstone", "A magical cloud resource used in crafting more nimbuses, or is it nimbi?"]
 		},
 		"doodad": {
 			"modTroposphereCloudBoulder": "cloud boulder",
 			"modTroposphereStormBoulder": "storm boulder",
-			"modTroposphereRainbow": "rainbow"
+			"modTroposphereRainbow": ["rainbow", "A magical thing of beauty and colorful delight, ready to gather with a bottle and destroy for your own gain."]
 		},
 		"terrain": {
 			"modTroposphereClouds": "clouds",
@@ -48,21 +48,21 @@
 			"modTroposphereHole": "hole"
 		},
 		"creature": {
-			"modTroposphereCloudBear": "cloud bear",
-			"modTroposphereCloudRabbit": "cloud rabbit",
-			"modTroposphereCloudling": "cloudling",
-			"modTroposphereLightningElemental": "lightning elemental",
-			"modTroposphereSprite": "sprite"
+			"modTroposphereCloudBear": ["cloud bear", "Contrary to popular belief, this cloud bear does not care at all."],
+			"modTroposphereCloudRabbit": ["cloud rabbit", "A rabbit that has seemingly been dyed with food coloring."],
+			"modTroposphereCloudling": ["cloudling", "This bird does not tweet; it's more into the gram."],
+			"modTroposphereLightningElemental": ["lightning elemental", "An otherworldly living ball of cloud fluff and electrostatic discharge."],
+			"modTroposphereSprite": ["sprite", "The unofficial boss creature of the troposphere. Watch as it fades in and out of existence and probably one hits you dead."]
 		},
 		"corpse": {
 			"modTroposphereLightningElemental": "fulgurite",
 			"modTroposphereSprite": "ethereal mist"
 		},
 		"skill": {
-			"modTroposphereFlying": ["flying", "Increases your damage resistance when falling from the Troposphere."]
+			"modTroposphereFlying": ["flying", "Increases your damage resistance when falling from the troposphere."]
 		},
 		"action": {
-			"modTroposphereFly": ["Fly", "Fly to and from the Troposphere."],
+			"modTroposphereFly": ["Fly", "Fly to and from the troposphere."],
 			"modTroposphereGatherRainbow": ["Gather Rainbow", "Gather a rainbow with a container."]
 		}
 	}

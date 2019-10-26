@@ -3,11 +3,13 @@ Adds a magical world of clouds!
 
 Fly up into the cloud world with a brand new item called the "Nimbus". You can expect to find new items, uses, terrain, and even creatures. You can even take a peek at the world down below. But make sure not to fall down!
 
-## Cloning:
+## Cloning/Setup:
 ```
 git clone https://github.com/WaywardGame/troposphere.git
 cd troposphere
-git submodule update --init
+On Windows: path/to/wayward/install/wayward.cmd +mod update .
+On macOS: path/to/wayward/install/Wayward.app/Contents/MacOS/Electron +mod update .
+On Linux: path/to/wayward/install/wayward +mod update .
 ```
 
 ## Building:
