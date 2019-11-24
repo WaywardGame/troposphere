@@ -58,7 +58,7 @@ export default class Troposphere extends Mod {
     creatureSprite: CreatureType;
     data: ITroposphereData;
     firstLoad: boolean;
-    private readonly creaturePool;
+    private get creaturePool();
     private falling;
     initializeSaveData(data?: ITroposphereData): ITroposphereData;
     onLoad(): void;

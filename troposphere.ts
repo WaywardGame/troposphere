@@ -166,7 +166,10 @@ export default class Troposphere extends Mod {
 	@Register.item("RainbowGlassBottle", {
 		weight: 1.0,
 		use: [ActionType.DrinkItem],
-		returnOnUse: [ItemType.GlassBottle, false],
+		returnOnUseAndDecay: {
+			type: ItemType.GlassBottle,
+			damaged: true,
+		},
 	})
 	public itemRainbowGlassBottle: ItemType;
 
