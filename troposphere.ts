@@ -7,12 +7,13 @@ import { CreatureType, SpawnGroup, TileGroup } from "entity/creature/ICreature";
 import Human from "entity/Human";
 import { AiType, DamageType, Defense, EntityType, MoveType, Resistances, StatusType, Vulnerabilities } from "entity/IEntity";
 import { Delay, HairColor, HairStyle, SkillType, SkinColor } from "entity/IHuman";
-import { Source } from "entity/player/IMessageManager";
+import { MessageType, Source } from "entity/player/IMessageManager";
 import { PlayerState } from "entity/player/IPlayer";
-import { MessageType } from "entity/player/MessageManager";
 import Player from "entity/player/Player";
+import { EventBus } from "event/EventBuses";
 import { EventHandler } from "event/EventManager";
-import { RenderSource } from "game/IGame";
+import { BiomeType } from "game/IBiome";
+import { RenderSource, UpdateRenderFlag } from "game/IGame";
 import { WorldZ } from "game/WorldZ";
 import { ItemType, RecipeLevel } from "item/IItem";
 import { itemDescriptions, RecipeComponent } from "item/Items";
@@ -47,7 +48,8 @@ export default class Troposphere extends Mod {
 	@Mod.instance<Troposphere>("Troposphere")
 	public static readonly INSTANCE: Troposphere;
 
-	private static readonly troposphereZ: number = WorldZ.Max + 1;
+	@Register.worldLayer("troposphere")
+	public readonly z: WorldZ;
 
 	////////////////////////////////////
 	// Misc Registrations
@@ -74,7 +76,7 @@ export default class Troposphere extends Mod {
 	@Register.action("Fly", new Action(ActionArgument.ItemInventory)
 		.setUsableBy(EntityType.Player)
 		.setHandler((action, item) => {
-			Troposphere.INSTANCE.setFlying(action.executor, action.executor.z !== Troposphere.troposphereZ, true);
+			Troposphere.INSTANCE.setFlying(action.executor, action.executor.z !== Troposphere.INSTANCE.z, true);
 			item.damage(ActionType[action.type]);
 		}))
 	public readonly actionFly: ActionType;
@@ -231,7 +233,7 @@ export default class Troposphere extends Mod {
 		gather: true,
 		noLos: true,
 		sound: SfxType.TreeHit,
-		leftOver: Registry<Troposphere>().get("terrainCloudWater"),
+		leftOvers: [{ terrainType: Registry<Troposphere>().get("terrainCloudWater") }],
 		noGfxSwitch: true,
 		noBackground: true,
 		doodad: Registry<Troposphere>().get("doodadCloudBoulder"),
@@ -248,7 +250,7 @@ export default class Troposphere extends Mod {
 		gather: true,
 		noLos: true,
 		sound: SfxType.RockHit,
-		leftOver: Registry<Troposphere>().get("terrainCloud"),
+		leftOvers: [{ terrainType: Registry<Troposphere>().get("terrainCloud") }],
 		noGfxSwitch: true,
 		isMountain: true,
 		noBackground: true,
@@ -278,7 +280,7 @@ export default class Troposphere extends Mod {
 		gather: true,
 		noLos: true,
 		sound: SfxType.TreeHit,
-		leftOver: Registry<Troposphere>().get("terrainCloudWater"),
+		leftOvers: [{ terrainType: Registry<Troposphere>().get("terrainCloudWater") }],
 		noGfxSwitch: true,
 		noBackground: true,
 		doodad: Registry<Troposphere>().get("doodadStormBoulder"),
@@ -297,7 +299,7 @@ export default class Troposphere extends Mod {
 		gather: true,
 		noLos: true,
 		sound: SfxType.RockHit,
-		leftOver: Registry<Troposphere>().get("terrainStorm"),
+		leftOvers: [{ terrainType: Registry<Troposphere>().get("terrainStorm") }],
 		noGfxSwitch: true,
 		isMountain: true,
 		noBackground: true,
@@ -346,7 +348,17 @@ export default class Troposphere extends Mod {
 		moveType: MoveType.Land | MoveType.ShallowWater | MoveType.Water | MoveType.BreakDoodads,
 		canCauseStatus: [StatusType.Bleeding],
 		spawnTiles: TileGroup.None,
-		spawnReputation: 16000,
+		spawn: {
+			[BiomeType.Coastal]: {
+				spawnsOnReputation: -16000,
+			},
+			[BiomeType.IceCap]: {
+				spawnsOnReputation: -16000,
+			},
+			[BiomeType.Arid]: {
+				spawnsOnReputation: -16000,
+			},
+		},
 		reputation: 300,
 		makeNoise: true,
 		loot: [{
@@ -458,7 +470,17 @@ export default class Troposphere extends Mod {
 		blood: { r: 141, g: 155, b: 158 },
 		aberrantBlood: { r: 95, g: 107, b: 122 },
 		canCauseStatus: [StatusType.Bleeding],
-		spawnReputation: 32000,
+		spawn: {
+			[BiomeType.Coastal]: {
+				spawnsOnReputation: -24000,
+			},
+			[BiomeType.IceCap]: {
+				spawnsOnReputation: -24000,
+			},
+			[BiomeType.Arid]: {
+				spawnsOnReputation: -24000,
+			},
+		},
 		reputation: 300,
 		makeNoise: true,
 	}, {
@@ -486,7 +508,17 @@ export default class Troposphere extends Mod {
 		lootGroup: LootGroupType.High,
 		blood: { r: 238, g: 130, b: 134 },
 		canCauseStatus: [StatusType.Bleeding],
-		spawnReputation: 32000,
+		spawn: {
+			[BiomeType.Coastal]: {
+				spawnsOnReputation: -32000,
+			},
+			[BiomeType.IceCap]: {
+				spawnsOnReputation: -32000,
+			},
+			[BiomeType.Arid]: {
+				spawnsOnReputation: -32000,
+			},
+		},
 		reputation: 500,
 		makeNoise: true,
 	}, {
@@ -538,7 +570,7 @@ export default class Troposphere extends Mod {
 	}
 
 	public setFlying(player: Player, flying: boolean, passTurn: boolean): boolean {
-		const z = !flying ? WorldZ.Overworld : Troposphere.troposphereZ;
+		const z = !flying ? WorldZ.Overworld : this.z;
 
 		const openTile = TileHelpers.findMatchingTile(player, this.isFlyableTile.bind(this));
 		if (openTile === undefined || player.z === WorldZ.Cave) {
@@ -553,9 +585,9 @@ export default class Troposphere extends Mod {
 
 		player.x = openTile.x;
 		player.y = openTile.y;
-		player.z = z;
+		player.setZ(z, false);
 
-		player.raft = undefined;
+		player.vehicleItemId = undefined;
 
 		player.skillGain(this.skillFlying);
 
@@ -599,7 +631,7 @@ export default class Troposphere extends Mod {
 
 	@Override @HookMethod
 	public onCreateWorld(world: IWorld): void {
-		world.addLayer(Troposphere.troposphereZ);
+		world.addLayer(this.z);
 	}
 
 	@Override @HookMethod
@@ -623,7 +655,7 @@ export default class Troposphere extends Mod {
 
 		for (let x = 0; x < game.mapSize; x++) {
 			for (let y = 0; y < game.mapSize; y++) {
-				tile = game.setTile(x, y, Troposphere.troposphereZ, game.getTile(x, y, Troposphere.troposphereZ) || {} as ITile);
+				tile = game.setTile(x, y, this.z, game.getTile(x, y, this.z) || {} as ITile);
 
 				let tileGfx = 0;
 				const overworldTile = game.getTile(x, y, WorldZ.Overworld);
@@ -656,7 +688,7 @@ export default class Troposphere extends Mod {
 					case TerrainType.ShallowFreshWater:
 						if (Random.float() <= rainbowChance) {
 							terrainType = this.terrainCloud;
-							doodadManager.create(this.doodadRainbow, x, y, Troposphere.troposphereZ);
+							doodadManager.create(this.doodadRainbow, x, y, this.z);
 
 						} else {
 							terrainType = this.terrainCloudWater;
@@ -698,7 +730,7 @@ export default class Troposphere extends Mod {
 
 		for (let x = 0; x < game.mapSize; x++) {
 			for (let y = 0; y < game.mapSize; y++) {
-				terrainType = TileHelpers.getType(game.getTile(x, y, Troposphere.troposphereZ));
+				terrainType = TileHelpers.getType(game.getTile(x, y, this.z));
 
 				if (generateNewWorld) {
 					switch (terrainType) {
@@ -707,11 +739,11 @@ export default class Troposphere extends Mod {
 							const chance = Random.float();
 							const aberrantChance = terrainType === this.terrainCloud ? creatureAberrantChance : creatureAberrantStormChance;
 							if (chance <= creatureSpriteChance) {
-								creatureManager.spawn(this.creatureSprite, x, y, Troposphere.troposphereZ, true, Random.float() <= aberrantChance);
+								creatureManager.spawn(this.creatureSprite, x, y, this.z, true, Random.float() <= aberrantChance);
 
 							} else if (chance <= creatureChance) {
 								const creatureType = this.creaturePool[Random.int(this.creaturePool.length)];
-								creatureManager.spawn(creatureType, x, y, Troposphere.troposphereZ, true, Random.float() <= aberrantChance);
+								creatureManager.spawn(creatureType, x, y, this.z, true, Random.float() <= aberrantChance);
 							}
 
 							break;
@@ -723,14 +755,14 @@ export default class Troposphere extends Mod {
 
 	@Override @HookMethod
 	public preRenderWorld(tileScale: number, viewWidth: number, viewHeight: number) {
-		if (localPlayer.z !== Troposphere.troposphereZ) {
+		if (localPlayer.z !== this.z) {
 			return;
 		}
 
 		if (this.falling) {
 			const turnProgress = 1 - Math.min(1, Math.max(0, (localPlayer.movementFinishTime - game.absoluteTime) / (Delay.Movement * game.interval)));
 			tileScale = this.easeInCubic(turnProgress, tileScale * 0.25, tileScale * 0.75, 1.0);
-			game.updateRender(RenderSource.Mod);
+			game.updateRender(RenderSource.Mod, UpdateRenderFlag.World);
 
 		} else {
 			tileScale *= 0.25;
@@ -773,7 +805,7 @@ export default class Troposphere extends Mod {
 
 	@Override @HookMethod
 	public onMove(player: Player, nextX: number, nextY: number, tile: ITile, direction: Direction): boolean | undefined {
-		if (player.z !== Troposphere.troposphereZ) {
+		if (player.z !== this.z) {
 			return;
 		}
 
@@ -785,13 +817,13 @@ export default class Troposphere extends Mod {
 			// game.passTurn(localPlayer);
 
 			// no light blocking
-			fieldOfView.compute(false);
+			fieldOfView.compute(game.absoluteTime);
 		}
 	}
 
-	@Override @HookMethod
+	@EventHandler(EventBus.Players, "moveComplete")
 	public onMoveComplete(player: Player) {
-		if (player.z !== Troposphere.troposphereZ) {
+		if (player.z !== this.z) {
 			return;
 		}
 
@@ -833,7 +865,7 @@ export default class Troposphere extends Mod {
 
 	@Override @HookMethod
 	public onSpawnCreatureFromGroup(creatureGroup: SpawnGroup, creaturePool: CreatureType[], x: number, y: number, z: number): boolean | undefined {
-		if (z !== Troposphere.troposphereZ) {
+		if (z !== this.z) {
 			return;
 		}
 
@@ -911,7 +943,7 @@ export default class Troposphere extends Mod {
 
 	@Inject(WorldRenderer, "getFogColor", InjectionPosition.Pre)
 	protected getFogColor(api: IInjectionApi<WorldRenderer, "getFogColor">) {
-		if (localPlayer.z !== Troposphere.troposphereZ) {
+		if (localPlayer.z !== this.z) {
 			return;
 		}
 

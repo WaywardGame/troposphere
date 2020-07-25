@@ -4,6 +4,7 @@ import Creature from "entity/creature/Creature";
 import { CreatureType, SpawnGroup } from "entity/creature/ICreature";
 import { SkillType } from "entity/IHuman";
 import Player from "entity/player/Player";
+import { WorldZ } from "game/WorldZ";
 import { ItemType } from "item/IItem";
 import Message from "language/dictionary/Message";
 import Note from "language/dictionary/Note";
@@ -21,7 +22,7 @@ interface ITroposphereData {
 }
 export default class Troposphere extends Mod {
     static readonly INSTANCE: Troposphere;
-    private static readonly troposphereZ;
+    readonly z: WorldZ;
     skillFlying: SkillType;
     readonly flyingHelpArticle: HelpArticle;
     readonly flyingNote: Note;

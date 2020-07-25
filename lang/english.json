@@ -1,6 +1,9 @@
 {
 	"extends": "English",
 	"dictionaries": {
+		"worldLayer": {
+			"modTroposphereTroposphere": "troposphere"
+		},
 		"note": {
 			"modTroposphereFlying": [
 				"Flying",
