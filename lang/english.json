@@ -35,6 +35,9 @@
 			"modTroposphereSnowflakes": ["snowflakes", "A couple of snowflakes that can somehow resist instantly melting in your grasp."],
 			"modTroposphereCloudstone": ["cloudstone", "A magical cloud resource used in crafting more nimbuses, or is it nimbi?"]
 		},
+		"itemGroup": {
+			"modTroposphereTroposphere": ["troposphere"]
+		},
 		"doodad": {
 			"modTroposphereCloudBoulder": "cloud boulder",
 			"modTroposphereStormBoulder": "storm boulder",

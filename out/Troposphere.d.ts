@@ -5,7 +5,7 @@ import { CreatureType, SpawnGroup } from "entity/creature/ICreature";
 import { SkillType } from "entity/IHuman";
 import Player from "entity/player/Player";
 import { WorldZ } from "game/WorldZ";
-import { ItemType } from "item/IItem";
+import { ItemType, ItemTypeGroup } from "item/IItem";
 import Message from "language/dictionary/Message";
 import Note from "language/dictionary/Note";
 import Mod from "mod/Mod";
@@ -41,6 +41,7 @@ export default class Troposphere extends Mod {
     itemRainbowGlassBottle: ItemType;
     itemSnowflakes: ItemType;
     itemCloudstone: ItemType;
+    groupTroposphere: ItemTypeGroup;
     doodadCloudBoulder: DoodadType;
     doodadStormBoulder: DoodadType;
     doodadRainbow: DoodadType;

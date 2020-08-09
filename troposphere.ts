@@ -15,7 +15,7 @@ import { EventHandler } from "event/EventManager";
 import { BiomeType } from "game/IBiome";
 import { RenderSource, UpdateRenderFlag } from "game/IGame";
 import { WorldZ } from "game/WorldZ";
-import { ItemType, RecipeLevel } from "item/IItem";
+import { ItemType, RecipeLevel, ItemTypeGroup } from "item/IItem";
 import { itemDescriptions, RecipeComponent } from "item/Items";
 import { LootGroupType } from "item/LootGroups";
 import Message from "language/dictionary/Message";
@@ -178,6 +178,19 @@ export default class Troposphere extends Mod {
 	@Register.item("Snowflakes", {
 		weight: 0.1,
 		decayMax: 500,
+		use: [ActionType.DrinkItem],
+		onBurn: [ItemType.None],
+		onUse: {
+			[ActionType.DrinkItem]: [0, 2, 0, 1],
+		},
+		tier: {
+			[ItemTypeGroup.Liquid]: 1,
+			[ItemTypeGroup.FrozenWater]: 1,
+		},
+		groups: [
+			ItemTypeGroup.Liquid,
+			ItemTypeGroup.FrozenWater,
+		],
 	})
 	public itemSnowflakes: ItemType;
 
@@ -185,6 +198,22 @@ export default class Troposphere extends Mod {
 		weight: 1,
 	})
 	public itemCloudstone: ItemType;
+
+	////////////////////////////////////
+	// Group
+	//
+
+	@Register.itemGroup("Troposphere", {
+		types: [
+			Registry<Troposphere>().get("itemNimbus"),
+			Registry<Troposphere>().get("itemRainbow"),
+			Registry<Troposphere>().get("itemRainbowGlassBottle"),
+			Registry<Troposphere>().get("itemSnowflakes"),
+			Registry<Troposphere>().get("itemCloudstone"),
+		],
+		default: Registry<Troposphere>().get("itemNimbus"),
+	})
+	public groupTroposphere: ItemTypeGroup;
 
 	////////////////////////////////////
 	// Doodads
@@ -285,6 +314,7 @@ export default class Troposphere extends Mod {
 		noBackground: true,
 		doodad: Registry<Troposphere>().get("doodadStormBoulder"),
 		resources: [
+			{ type: Registry<Troposphere>().get("itemSnowflakes"), chance: 5 },
 			{ type: Registry<Troposphere>().get("itemCloudstone") },
 			{ type: Registry<Troposphere>().get("itemCloudstone"), chance: 45 },
 			{ type: Registry<Troposphere>().get("itemCloudstone") },
@@ -304,15 +334,13 @@ export default class Troposphere extends Mod {
 		isMountain: true,
 		noBackground: true,
 		resources: [
+			{ type: Registry<Troposphere>().get("itemSnowflakes"), chance: 5 },
 			{ type: Registry<Troposphere>().get("itemCloudstone") },
+			{ type: Registry<Troposphere>().get("itemSnowflakes"), chance: 5 },
 			{ type: Registry<Troposphere>().get("itemCloudstone") },
+			{ type: Registry<Troposphere>().get("itemSnowflakes"), chance: 5 },
 			{ type: Registry<Troposphere>().get("itemCloudstone") },
-			{ type: Registry<Troposphere>().get("itemCloudstone") },
-			{ type: Registry<Troposphere>().get("itemCloudstone") },
-			{ type: Registry<Troposphere>().get("itemCloudstone") },
-			{ type: Registry<Troposphere>().get("itemCloudstone") },
-			{ type: Registry<Troposphere>().get("itemCloudstone") },
-			{ type: Registry<Troposphere>().get("itemCloudstone") },
+			{ type: Registry<Troposphere>().get("itemSnowflakes"), chance: 5 },
 			{ type: Registry<Troposphere>().get("itemCloudstone") },
 			{ type: Registry<Troposphere>().get("itemCloudstone"), chance: 45 },
 			{ type: Registry<Troposphere>().get("itemCloudstone") },

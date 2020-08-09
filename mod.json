@@ -1,8 +1,8 @@
 {
 	"name": "Troposphere",
 	"description": "Adds a magical world of clouds!",
-	"version": "1.3.2",
-	"author": "Spacetech",
+	"version": "1.3.3",
+	"author": "Spacetech & Drathy",
 	"waywardVersion": "2.9.0-beta",
 	"file": "out/Troposphere.js",
 	"languages": [
