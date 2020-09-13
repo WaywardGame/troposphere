@@ -805,7 +805,7 @@ export default class Troposphere extends Mod {
 			.floor()
 			.divide(scale);
 
-		renderer.layers[WorldZ.Overworld].renderFullbright(position.x, position.y, tileScale, viewWidth, viewHeight, false);
+		renderer.renderWorldLayer(renderer.layers[WorldZ.Overworld], position.x, position.y, tileScale, viewWidth, viewHeight, RenderFlag.Terrain, false);
 	}
 
 	@Override @HookMethod
