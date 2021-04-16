@@ -1,43 +1,43 @@
 import { SfxType } from "audio/IAudio";
-import { DoodadType } from "doodad/IDoodad";
-import { Action } from "entity/action/Action";
-import { ActionArgument, ActionType } from "entity/action/IAction";
-import Creature from "entity/creature/Creature";
-import { CreatureType, SpawnGroup, TileGroup } from "entity/creature/ICreature";
-import Human from "entity/Human";
-import { AiType, DamageType, Defense, EntityType, MoveType, Resistances, StatusType, Vulnerabilities } from "entity/IEntity";
-import { Delay, HairColor, HairStyle, SkillType, SkinColor } from "entity/IHuman";
-import { MessageType, Source } from "entity/player/IMessageManager";
-import { PlayerState } from "entity/player/IPlayer";
-import Player from "entity/player/Player";
 import { EventBus } from "event/EventBuses";
 import { EventHandler } from "event/EventManager";
-import { BiomeType } from "game/IBiome";
+import { BiomeType } from "game/biome/IBiome";
+import { DoodadType } from "game/doodad/IDoodad";
+import { Action } from "game/entity/action/Action";
+import { ActionArgument, ActionType } from "game/entity/action/IAction";
+import Creature from "game/entity/creature/Creature";
+import { CreatureType, SpawnGroup, TileGroup } from "game/entity/creature/ICreature";
+import Human from "game/entity/Human";
+import { AiType, DamageType, Defense, EntityType, MoveType, StatusType } from "game/entity/IEntity";
+import { Delay, HairColor, HairStyle, SkillType, SkinColor } from "game/entity/IHuman";
+import { MessageType, Source } from "game/entity/player/IMessageManager";
+import { PlayerState } from "game/entity/player/IPlayer";
+import Player from "game/entity/player/Player";
 import { RenderSource, UpdateRenderFlag } from "game/IGame";
+import { ItemType, ItemTypeGroup, RecipeLevel } from "game/item/IItem";
+import { itemDescriptions, RecipeComponent } from "game/item/Items";
+import { LootGroupType } from "game/item/LootGroups";
+import { ITile, TerrainType } from "game/tile/ITerrain";
+import Terrains from "game/tile/Terrains";
 import { WorldZ } from "game/WorldZ";
-import { ItemType, RecipeLevel, ItemTypeGroup } from "item/IItem";
-import { itemDescriptions, RecipeComponent } from "item/Items";
-import { LootGroupType } from "item/LootGroups";
 import Message from "language/dictionary/Message";
 import Note from "language/dictionary/Note";
 import { HookMethod } from "mod/IHookHost";
 import Mod from "mod/Mod";
 import Register, { Registry } from "mod/ModRegistry";
-import WalkToTileHandler from "newui/screen/screens/game/util/movement/WalkToTileHandler";
-import { HelpArticle } from "newui/screen/screens/menu/menus/help/HelpArticleDescriptions";
 import IWorld from "renderer/IWorld";
 import { RenderFlag } from "renderer/IWorldRenderer";
 import WorldRenderer from "renderer/WorldRenderer";
-import { ITile, TerrainType } from "tile/ITerrain";
-import Terrains from "tile/Terrains";
+import WalkToTileHandler from "ui/screen/screens/game/util/movement/WalkToTileHandler";
+import { HelpArticle } from "ui/screen/screens/menu/menus/help/HelpArticleDescriptions";
+import { IInjectionApi, Inject, InjectionPosition } from "utilities/class/Inject";
 import Enums from "utilities/enum/Enums";
-import { IInjectionApi, Inject, InjectionPosition } from "utilities/Inject";
+import TileHelpers from "utilities/game/TileHelpers";
 import { Direction } from "utilities/math/Direction";
 import { IVector2 } from "utilities/math/IVector";
 import Vector2 from "utilities/math/Vector2";
 import Vector3 from "utilities/math/Vector3";
-import Random from "utilities/Random";
-import TileHelpers from "utilities/TileHelpers";
+import Random from "utilities/random/Random";
 
 interface ITroposphereData {
 	seed: number;
@@ -364,13 +364,9 @@ export default class Troposphere extends Mod {
 		maxhp: 21,
 		minatk: 5,
 		maxatk: 13,
-		defense: new Defense(3,
-			new Resistances(
-				DamageType.Piercing, 3,
-				DamageType.Blunt, 1,
-			),
-			new Vulnerabilities(),
-		),
+		defense: new Defense(3)
+			.setResistance(DamageType.Piercing, 3)
+			.setResistance(DamageType.Blunt, 1),
 		damageType: DamageType.Slashing | DamageType.Blunt,
 		ai: AiType.Hostile,
 		moveType: MoveType.Land | MoveType.ShallowWater | MoveType.Water | MoveType.BreakDoodads,
@@ -415,10 +411,7 @@ export default class Troposphere extends Mod {
 		maxhp: 6,
 		minatk: 1,
 		maxatk: 2,
-		defense: new Defense(0,
-			new Resistances(),
-			new Vulnerabilities(),
-		),
+		defense: new Defense(0),
 		damageType: DamageType.Slashing,
 		ai: AiType.Scared,
 		moveType: MoveType.Land | MoveType.ShallowWater,
@@ -444,14 +437,9 @@ export default class Troposphere extends Mod {
 		maxhp: 9,
 		minatk: 2,
 		maxatk: 3,
-		defense: new Defense(0,
-			new Resistances(
-				DamageType.Piercing, 1,
-			),
-			new Vulnerabilities(
-				DamageType.Blunt, 1,
-			),
-		),
+		defense: new Defense(0)
+			.setResistance(DamageType.Piercing, 1)
+			.setVulnerability(DamageType.Blunt, 1),
 		damageType: DamageType.Piercing,
 		ai: AiType.Neutral,
 		moveType: MoveType.Flying,
@@ -483,12 +471,8 @@ export default class Troposphere extends Mod {
 		maxhp: 38,
 		minatk: 11,
 		maxatk: 19,
-		defense: new Defense(5,
-			new Resistances(
-				DamageType.Fire, 100,
-			),
-			new Vulnerabilities(),
-		),
+		defense: new Defense(5)
+			.setResistance(DamageType.Fire, 100),
 		damageType: DamageType.Fire | DamageType.Blunt,
 		ai: AiType.Hostile,
 		moveType: MoveType.Flying,
@@ -523,12 +507,8 @@ export default class Troposphere extends Mod {
 		maxhp: 38,
 		minatk: 11,
 		maxatk: 19,
-		defense: new Defense(5,
-			new Resistances(
-				DamageType.Fire, 100,
-			),
-			new Vulnerabilities(),
-		),
+		defense: new Defense(5)
+			.setResistance(DamageType.Fire, 100),
 		damageType: DamageType.Fire | DamageType.Blunt,
 		ai: AiType.Hostile,
 		moveType: MoveType.Flying,
@@ -617,7 +597,7 @@ export default class Troposphere extends Mod {
 
 		player.vehicleItemId = undefined;
 
-		player.skillGain(this.skillFlying);
+		player.skill.gain(this.skillFlying);
 
 		player.notes.write(this.flyingNote, {
 			hasHair: player.customization.hairStyle !== "None",
@@ -862,7 +842,7 @@ export default class Troposphere extends Mod {
 			if (player.state !== PlayerState.Ghost) {
 				let damage = -40;
 
-				damage *= 1 - player.getSkill(this.skillFlying) / 100;
+				damage *= 1 - player.skill.get(this.skillFlying) / 100;
 
 				const tile = game.getTile(player.x, player.y, player.z);
 				const terrainType = TileHelpers.getType(tile);
