@@ -16,7 +16,7 @@ On Linux: path/to/wayward/install/wayward +mod update .
 Open the folder in Visual Studio Code and build with Ctrl+Shift+B.
 
 ## Steam Workshop
-[http://steamcommunity.com/sharedfiles/filedetails/?id=474819705](http://steamcommunity.com/sharedfiles/filedetails/?id=474819705)
+[https://steamcommunity.com/sharedfiles/filedetails/?id=474819705](https://steamcommunity.com/sharedfiles/filedetails/?id=474819705)
 
 ## Screenshots
 ![Troposphere](https://raw.githubusercontent.com/WaywardGame/troposphere/master/mod.png "Troposphere")
