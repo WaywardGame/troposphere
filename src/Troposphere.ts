@@ -6,6 +6,7 @@ import { DoodadType } from "game/doodad/IDoodad";
 import { Action } from "game/entity/action/Action";
 import { ActionArgument, ActionType } from "game/entity/action/IAction";
 import Creature from "game/entity/creature/Creature";
+import CreatureManager from "game/entity/creature/CreatureManager";
 import { CreatureType, SpawnGroup, TileGroup } from "game/entity/creature/ICreature";
 import Human from "game/entity/Human";
 import { AiType, DamageType, Defense, EntityType, MoveType, StatusType } from "game/entity/IEntity";
@@ -13,7 +14,9 @@ import { Delay, HairColor, HairStyle, SkillType, SkinColor } from "game/entity/I
 import { MessageType, Source } from "game/entity/player/IMessageManager";
 import { PlayerState } from "game/entity/player/IPlayer";
 import Player from "game/entity/player/Player";
-import { RenderSource, UpdateRenderFlag } from "game/IGame";
+import PlayerManager from "game/entity/player/PlayerManager";
+import { Game } from "game/Game";
+import Island from "game/island/Island";
 import { ItemType, ItemTypeGroup, RecipeLevel } from "game/item/IItem";
 import { itemDescriptions, RecipeComponent } from "game/item/Items";
 import { LootGroupType } from "game/item/LootGroups";
@@ -22,22 +25,21 @@ import Terrains from "game/tile/Terrains";
 import { WorldZ } from "game/WorldZ";
 import Message from "language/dictionary/Message";
 import Note from "language/dictionary/Note";
-import { HookMethod } from "mod/IHookHost";
 import Mod from "mod/Mod";
 import Register, { Registry } from "mod/ModRegistry";
-import IWorld from "renderer/IWorld";
-import { RenderFlag } from "renderer/IWorldRenderer";
-import WorldRenderer from "renderer/WorldRenderer";
+import World from "renderer/world/World";
+import { RenderFlag } from "renderer/world/IWorldRenderer";
+import WorldRenderer from "renderer/world/WorldRenderer";
 import WalkToTileHandler from "ui/screen/screens/game/util/movement/WalkToTileHandler";
 import { HelpArticle } from "ui/screen/screens/menu/menus/help/HelpArticleDescriptions";
 import { IInjectionApi, Inject, InjectionPosition } from "utilities/class/Inject";
 import Enums from "utilities/enum/Enums";
 import TileHelpers from "utilities/game/TileHelpers";
-import { Direction } from "utilities/math/Direction";
 import { IVector2 } from "utilities/math/IVector";
 import Vector2 from "utilities/math/Vector2";
 import Vector3 from "utilities/math/Vector3";
-import Random from "utilities/random/Random";
+import { createSeededRandom, generalRandom } from "utilities/random/Random";
+import { RenderSource, UpdateRenderFlag } from "renderer/IRenderer";
 
 interface ITroposphereData {
 	seed: number;
@@ -97,11 +99,11 @@ export default class Troposphere extends Mod {
 			player.messages.source(Source.Action, Source.Resource)
 				.send(Troposphere.INSTANCE.messageGatheredRainbow);
 
-			game.particle.create(player.x + player.direction.x, player.y + player.direction.y, player.z, { r: 12, g: 128, b: 247 });
+			renderer?.particle.create(player.island, player.x + player.direction.x, player.y + player.direction.y, player.z, { r: 12, g: 128, b: 247 });
 
 			item.changeInto(Troposphere.INSTANCE.itemRainbowGlassBottle);
 
-			doodadManager.remove(tileDoodad);
+			player.island.doodads.remove(tileDoodad);
 
 			game.passTurn(player);
 		}))
@@ -548,8 +550,7 @@ export default class Troposphere extends Mod {
 	}
 	private falling: boolean;
 
-	@Override
-	public initializeSaveData(data?: ITroposphereData) {
+	public override initializeSaveData(data?: ITroposphereData) {
 		if (data) {
 			this.firstLoad = false;
 			return data;
@@ -561,16 +562,14 @@ export default class Troposphere extends Mod {
 		};
 	}
 
-	@Override
-	public onLoad(): void {
+	public override onLoad(): void {
 		const glassBottle = itemDescriptions[ItemType.GlassBottle];
 		if (glassBottle && glassBottle.use) {
 			glassBottle.use.push(this.actionGatherRainbow);
 		}
 	}
 
-	@Override
-	public onUnload(): void {
+	public override onUnload(): void {
 		const glassBottle = itemDescriptions[ItemType.GlassBottle];
 		if (glassBottle && glassBottle.use) {
 			glassBottle.use.pop();
@@ -580,7 +579,7 @@ export default class Troposphere extends Mod {
 	public setFlying(player: Player, flying: boolean, passTurn: boolean): boolean {
 		const z = !flying ? WorldZ.Overworld : this.z;
 
-		const openTile = TileHelpers.findMatchingTile(player, this.isFlyableTile.bind(this));
+		const openTile = TileHelpers.findMatchingTile(player.island, player, this.isFlyableTile.bind(this));
 		if (openTile === undefined || player.z === WorldZ.Cave) {
 			if (passTurn) {
 				player.messages.source(Source.Action)
@@ -595,7 +594,7 @@ export default class Troposphere extends Mod {
 		player.y = openTile.y;
 		player.setZ(z, false);
 
-		player.vehicleItemId = undefined;
+		player.vehicleItemReference?.clear();
 
 		player.skill.gain(this.skillFlying);
 
@@ -614,7 +613,7 @@ export default class Troposphere extends Mod {
 		return true;
 	}
 
-	public isFlyableTile(point: IVector2, tile: ITile): boolean {
+	public isFlyableTile(island: Island, point: IVector2, tile: ITile): boolean {
 		if (tile.creature || tile.doodad) {
 			return false;
 		}
@@ -637,13 +636,13 @@ export default class Troposphere extends Mod {
 	////////////////////////////////////////
 	// Hooks
 
-	@Override @HookMethod
-	public onCreateWorld(world: IWorld): void {
+	@EventHandler(EventBus.Island, "createWorld")
+	public onCreateWorld(island: Island, world: World): void {
 		world.addLayer(this.z);
 	}
 
-	@Override @HookMethod
-	public preLoadWorldDifferences(generateNewWorld: boolean) {
+	@EventHandler(EventBus.Island, "preLoadWorldDifferences")
+	public preLoadWorldDifferences(island: Island, generateNewWorld: boolean) {
 		// percentage
 		const boulderChance = 0.6;
 		const stormChance = 0.2;
@@ -659,14 +658,14 @@ export default class Troposphere extends Mod {
 		let tile: ITile;
 		let terrainType: number;
 
-		Random.generator.setSeed(this.data.seed);
+		const seededRandom = createSeededRandom(this.data.seed);
 
 		for (let x = 0; x < game.mapSize; x++) {
 			for (let y = 0; y < game.mapSize; y++) {
-				tile = game.setTile(x, y, this.z, game.getTile(x, y, this.z) || {} as ITile);
+				tile = island.setTile(x, y, this.z, island.getTile(x, y, this.z) || {} as ITile);
 
 				let tileGfx = 0;
-				const overworldTile = game.getTile(x, y, WorldZ.Overworld);
+				const overworldTile = island.getTile(x, y, WorldZ.Overworld);
 				const terrainDescription = Terrains[TileHelpers.getType(overworldTile)];
 				const normalTerrainType = terrainDescription ? terrainDescription.terrainType : TerrainType.Grass;
 
@@ -684,7 +683,7 @@ export default class Troposphere extends Mod {
 					case TerrainType.Seawater:
 					case TerrainType.FreshWater:
 					case TerrainType.ShallowSeawater:
-						if (Random.float() <= stormChance) {
+						if (seededRandom.float() <= stormChance) {
 							terrainType = this.terrainStormBoulder;
 
 						} else {
@@ -694,9 +693,9 @@ export default class Troposphere extends Mod {
 						break;
 
 					case TerrainType.ShallowFreshWater:
-						if (Random.float() <= rainbowChance) {
+						if (seededRandom.float() <= rainbowChance) {
 							terrainType = this.terrainCloud;
-							doodadManager.create(this.doodadRainbow, x, y, this.z);
+							island.doodads.create(this.doodadRainbow, x, y, this.z);
 
 						} else {
 							terrainType = this.terrainCloudWater;
@@ -707,7 +706,7 @@ export default class Troposphere extends Mod {
 					default:
 						const doodad = overworldTile.doodad;
 						if (doodad && doodad.canGrow()) {
-							if (Random.float() <= boulderChance) {
+							if (seededRandom.float() <= boulderChance) {
 								terrainType = this.terrainCloudBoulder;
 
 							} else {
@@ -722,13 +721,13 @@ export default class Troposphere extends Mod {
 				}
 
 				if (terrainType === this.terrainCloud || terrainType === this.terrainStorm) {
-					if (Random.float() <= terrainHoleChance) {
+					if (seededRandom.float() <= terrainHoleChance) {
 						terrainType = this.terrainHole;
 					}
 				}
 
 				if (terrainType === this.terrainCloudBoulder || terrainType === this.terrainStormBoulder) {
-					tileGfx = Random.int(3);
+					tileGfx = seededRandom.int(3);
 				}
 
 				tile.data = TileHelpers.setTypeRaw(tile.data, terrainType);
@@ -738,20 +737,20 @@ export default class Troposphere extends Mod {
 
 		for (let x = 0; x < game.mapSize; x++) {
 			for (let y = 0; y < game.mapSize; y++) {
-				terrainType = TileHelpers.getType(game.getTile(x, y, this.z));
+				terrainType = TileHelpers.getType(island.getTile(x, y, this.z));
 
 				if (generateNewWorld) {
 					switch (terrainType) {
 						case this.terrainCloud:
 						case this.terrainStorm:
-							const chance = Random.float();
+							const chance = seededRandom.float();
 							const aberrantChance = terrainType === this.terrainCloud ? creatureAberrantChance : creatureAberrantStormChance;
 							if (chance <= creatureSpriteChance) {
-								creatureManager.spawn(this.creatureSprite, x, y, this.z, true, Random.float() <= aberrantChance);
+								island.creatures.spawn(this.creatureSprite, x, y, this.z, true, seededRandom.float() <= aberrantChance);
 
 							} else if (chance <= creatureChance) {
-								const creatureType = this.creaturePool[Random.int(this.creaturePool.length)];
-								creatureManager.spawn(creatureType, x, y, this.z, true, Random.float() <= aberrantChance);
+								const creatureType = this.creaturePool[seededRandom.int(this.creaturePool.length)];
+								island.creatures.spawn(creatureType, x, y, this.z, true, seededRandom.float() <= aberrantChance);
 							}
 
 							break;
@@ -761,8 +760,8 @@ export default class Troposphere extends Mod {
 		}
 	}
 
-	@Override @HookMethod
-	public preRenderWorld(tileScale: number, viewWidth: number, viewHeight: number) {
+	@EventHandler(EventBus.WorldRenderer, "preRenderWorld")
+	public preRenderWorld(worldRenderer: WorldRenderer, tileScale: number, viewWidth: number, viewHeight: number) {
 		if (localPlayer.z !== this.z) {
 			return;
 		}
@@ -770,7 +769,7 @@ export default class Troposphere extends Mod {
 		if (this.falling) {
 			const turnProgress = 1 - Math.min(1, Math.max(0, (localPlayer.movementFinishTime - game.absoluteTime) / (Delay.Movement * game.interval)));
 			tileScale = this.easeInCubic(turnProgress, tileScale * 0.25, tileScale * 0.75, 1.0);
-			game.updateRender(RenderSource.Mod, UpdateRenderFlag.World);
+			renderer?.updateRender(RenderSource.Mod, UpdateRenderFlag.World);
 
 		} else {
 			tileScale *= 0.25;
@@ -779,40 +778,42 @@ export default class Troposphere extends Mod {
 		let position = new Vector2(localPlayer.fromX, localPlayer.fromY)
 			.lerp(localPlayer, localPlayer.movementProgress);
 
-		const scale = 16 * renderer.getZoom() * 0.25;
+		const scale = 16 * worldRenderer.getZoom() * 0.25;
 		position = new Vector2(position)
 			.multiply(scale)
 			.floor()
 			.divide(scale);
 
-		renderer.renderWorldLayer(renderer.layers[WorldZ.Overworld], position.x, position.y, tileScale, viewWidth, viewHeight, RenderFlag.Terrain, false);
+		worldRenderer.renderWorldLayer(worldRenderer.layers[WorldZ.Overworld], position.x, position.y, tileScale, viewWidth, viewHeight, RenderFlag.Terrain, false);
 	}
 
-	@Override @HookMethod
-	public shouldRender() {
+	@EventHandler(EventBus.WorldRenderer, "shouldRender")
+	public shouldRender(_: any): RenderFlag | undefined {
 		if (this.falling) {
 			return RenderFlag.Player;
 		}
+
+		return undefined;
 	}
 
-	@Override @HookMethod
-	public onGameStart(isLoadingSave: boolean): void {
+	@EventHandler(EventBus.Game, "play")
+	public onGameStart(game: Game, isLoadingSave: boolean, playedCount: number): void {
 		if ((!isLoadingSave || this.firstLoad) && !multiplayer.isConnected()) {
 			// give nimbus
 			localPlayer.createItemInInventory(this.itemNimbus);
 		}
 	}
 
-	@Override @HookMethod
-	public onPlayerJoin(player: Player): void {
-		if (itemManager.getItemInContainer(player.inventory, this.itemNimbus) === undefined) {
+	@EventHandler(EventBus.PlayerManager, "join")
+	public onPlayerJoin(manager: PlayerManager, player: Player): void {
+		if (player.island.items.getItemInContainer(player.inventory, this.itemNimbus) === undefined) {
 			// give nimbus if they don't have one
 			player.createItemInInventory(this.itemNimbus);
 		}
 	}
 
-	@Override @HookMethod
-	public onMove(player: Player, nextX: number, nextY: number, tile: ITile, direction: Direction): boolean | undefined {
+	@EventHandler(EventBus.Players, "preMove")
+	public preMove(player: Player, fromX: number, fromY: number, fromZ: number, fromTile: ITile, nextX: number, nextY: number, nextZ: number, tile: ITile): boolean | void | undefined {
 		if (player.z !== this.z) {
 			return;
 		}
@@ -825,7 +826,7 @@ export default class Troposphere extends Mod {
 			// game.passTurn(localPlayer);
 
 			// no light blocking
-			fieldOfView.compute(game.absoluteTime);
+			renderer?.fieldOfView.compute(game.absoluteTime);
 		}
 	}
 
@@ -844,7 +845,7 @@ export default class Troposphere extends Mod {
 
 				damage *= 1 - player.skill.get(this.skillFlying) / 100;
 
-				const tile = game.getTile(player.x, player.y, player.z);
+				const tile = player.island.getTile(player.x, player.y, player.z);
 				const terrainType = TileHelpers.getType(tile);
 
 				if (terrainType === TerrainType.DeepFreshWater || terrainType === TerrainType.DeepSeawater) {
@@ -854,15 +855,16 @@ export default class Troposphere extends Mod {
 					damage *= .75;
 				}
 
-				damage = player.damage(damage, this.messageDeathByFalling);
+				const actualDamage = player.damage(damage, this.messageDeathByFalling);
+				if (actualDamage !== undefined) {
+					// fall damage
+					player.messages.source(Source.Wellbeing)
+						.type(MessageType.Bad)
+						.send(this.messageFellToLand, actualDamage);
 
-				// fall damage
-				player.messages.source(Source.Wellbeing)
-					.type(MessageType.Bad)
-					.send(this.messageFellToLand, damage);
-
-				if (damage > 25 || damage > 15 && Random.chance(.5)) {
-					tileEventManager.createBlood(player.x, player.y, player.z);
+					if (actualDamage > 25 || actualDamage > 15 && player.island.seededRandom.chance(.5)) {
+						player.island.tileEvents.createBlood(player.x, player.y, player.z);
+					}
 				}
 			}
 
@@ -871,8 +873,8 @@ export default class Troposphere extends Mod {
 		}
 	}
 
-	@Override @HookMethod
-	public onSpawnCreatureFromGroup(creatureGroup: SpawnGroup, creaturePool: CreatureType[], x: number, y: number, z: number): boolean | undefined {
+	@EventHandler(EventBus.CreatureManager, "shouldSpawnCreatureFromGroup")
+	public shouldSpawnCreatureFromGroup(manager: CreatureManager, creatureGroup: SpawnGroup, creaturePool: CreatureType[], x: number, y: number, z: number): boolean | undefined {
 		if (z !== this.z) {
 			return;
 		}
@@ -885,15 +887,17 @@ export default class Troposphere extends Mod {
 	//
 
 	@EventHandler(Human, "canConsumeItem")
-	protected canConsumeItem(player: Player, itemType: ItemType, actionType: ActionType): boolean | undefined {
+	protected canConsumeItem(human: Human, itemType: ItemType, actionType: ActionType): boolean | undefined {
 		if (itemType === this.itemRainbowGlassBottle && actionType === ActionType.DrinkItem) {
-			player.customization = {
-				hairStyle: HairStyle[Enums.getRandom(HairStyle)] as keyof typeof HairStyle,
-				hairColor: HairColor[Enums.getRandom(HairColor)] as keyof typeof HairColor,
-				skinColor: SkinColor[Enums.getRandom(SkinColor)] as keyof typeof SkinColor,
+			human.customization = {
+				hairStyle: HairStyle[Enums.getRandom(HairStyle, human.island.seededRandom)] as keyof typeof HairStyle,
+				hairColor: HairColor[Enums.getRandom(HairColor, human.island.seededRandom)] as keyof typeof HairColor,
+				skinColor: SkinColor[Enums.getRandom(SkinColor, human.island.seededRandom)] as keyof typeof SkinColor,
 			};
 			return true;
 		}
+
+		return undefined;
 	}
 
 	@EventHandler(Creature, "canMove")
@@ -927,7 +931,7 @@ export default class Troposphere extends Mod {
 		}
 
 		if (creatureObj.nextVisibleCount === undefined || creatureObj.nextVisibleCount === 0) {
-			creatureObj.nextVisibleCount = Random.intInRange(1, 6);
+			creatureObj.nextVisibleCount = generalRandom.intInRange(1, 6);
 			return;
 		}
 
@@ -951,13 +955,13 @@ export default class Troposphere extends Mod {
 
 	@Inject(WorldRenderer, "getFogColor", InjectionPosition.Pre)
 	protected getFogColor(api: IInjectionApi<WorldRenderer, "getFogColor">) {
-		if (localPlayer.z !== this.z) {
+		if (localPlayer.z !== this.z || !renderer) {
 			return;
 		}
 
 		api.cancelled = true;
 
-		const ambientLightLevel = game.getAmbientLightLevel(localPlayer.z);
+		const ambientLightLevel = renderer.getAmbientLightLevel(localPlayer.z);
 		const ambientLightColor = new Vector3(api.executingInstance.calculateAmbientColor());
 		if (ambientLightLevel > 0.5) {
 			api.returnValue = Vector3.mix(ambientLightColor, Vector3.ONE, ambientLightLevel * 2 - 1).xyz;
