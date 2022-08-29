@@ -692,7 +692,7 @@ export default class Troposphere extends Mod {
 		let tile: ITile;
 		let terrainType: number;
 
-		const seededRandom = createSeededRandom(this.data.seed);
+		const seededRandom = createSeededRandom(false, this.data.seed);
 
 		for (let x = 0; x < game.mapSize; x++) {
 			for (let y = 0; y < game.mapSize; y++) {
