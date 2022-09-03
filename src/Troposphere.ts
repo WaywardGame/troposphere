@@ -4,7 +4,6 @@ import { EventHandler } from "event/EventManager";
 import { BiomeType } from "game/biome/IBiome";
 import { DoodadType } from "game/doodad/IDoodad";
 import { Action } from "game/entity/action/Action";
-import ToggleVehicle from "game/entity/action/actions/ToggleVehicle";
 import { ActionArgument, ActionType } from "game/entity/action/IAction";
 import Creature from "game/entity/creature/Creature";
 import CreatureManager from "game/entity/creature/CreatureManager";
@@ -19,7 +18,7 @@ import PlayerManager from "game/entity/player/PlayerManager";
 import { BleedLevel } from "game/entity/status/handler/IBleeding";
 import { Game } from "game/Game";
 import Island from "game/island/Island";
-import { ItemType, ItemTypeGroup, RecipeLevel, VehicleType } from "game/item/IItem";
+import { ItemType, ItemTypeGroup, RecipeLevel, VehicleRenderType, VehicleType } from "game/item/IItem";
 import { itemDescriptions, RecipeComponent } from "game/item/ItemDescriptions";
 import { LootGroupType } from "game/item/LootGroups";
 import { ITile, TerrainType } from "game/tile/ITerrain";
@@ -76,9 +75,6 @@ export default class Troposphere extends Mod {
 	////////////////////////////////////
 	// Action Registrations
 	//
-
-	@Register.action("Fly", ToggleVehicle.clone())
-	public readonly actionFly: ActionType;
 
 	@Register.action("FlyToTroposphere", new Action(ActionArgument.ItemInventory)
 		.setUsableBy(EntityType.Player)
@@ -147,7 +143,7 @@ export default class Troposphere extends Mod {
 	//
 
 	@Register.item("Nimbus", {
-		use: [Registry<Troposphere>().get("actionFly"), Registry<Troposphere>().get("actionFlyToTroposphere"), ActionType.Build],
+		use: [ActionType.Ride, Registry<Troposphere>().get("actionFlyToTroposphere"), ActionType.Build],
 		recipe: {
 			components: [
 				RecipeComponent(ItemType.Feather, 2, 2, 2),
@@ -161,7 +157,8 @@ export default class Troposphere extends Mod {
 		disassemble: true,
 		durability: 5000,
 		vehicle: {
-			type: VehicleType.Stand,
+			type: VehicleType.Other,
+			renderType: VehicleRenderType.Stand,
 			movementSpeed: 4,
 			movementType: MoveType.Flying,
 			disallowedTileMessage: Message.None,
@@ -242,7 +239,7 @@ export default class Troposphere extends Mod {
 	@Register.doodad("Nimbus", {
 		pickUp: [Registry<Troposphere>().get("itemNimbus")],
 		repairItem: Registry<Troposphere>().get("itemNimbus"),
-		actionTypes: [Registry<Troposphere>().get("actionFly")],
+		actionTypes: [ActionType.Ride],
 		blockMove: true,
 		canBreak: true,
 		isFlammable: true,

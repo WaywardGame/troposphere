@@ -30,7 +30,6 @@ export default class Troposphere extends Mod {
     skillFlying: SkillType;
     readonly flyingHelpArticle: HelpArticle;
     readonly flyingNote: Note;
-    readonly actionFly: ActionType;
     readonly actionFlyToTroposphere: ActionType;
     readonly actionGatherRainbow: ActionType;
     readonly messageFlewToTroposphere: Message;
