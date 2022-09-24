@@ -693,7 +693,7 @@ export default class Troposphere extends Mod {
 
 		for (let x = 0; x < game.mapSize; x++) {
 			for (let y = 0; y < game.mapSize; y++) {
-				tile = island.setTile(x, y, this.z, island.getTile(x, y, this.z) || {} as ITile);
+				tile = island.setTile(x, y, this.z, island.getTileSafe(x, y, this.z) ?? {} as ITile);
 
 				let tileGfx = 0;
 				const overworldTile = island.getTile(x, y, WorldZ.Overworld);
