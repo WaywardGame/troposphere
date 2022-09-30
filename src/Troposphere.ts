@@ -15,10 +15,11 @@ import { MessageType, Source } from "game/entity/player/IMessageManager";
 import { PlayerState } from "game/entity/player/IPlayer";
 import Player from "game/entity/player/Player";
 import PlayerManager from "game/entity/player/PlayerManager";
+import { BleedLevel } from "game/entity/status/handler/IBleeding";
 import { Game } from "game/Game";
 import Island from "game/island/Island";
-import { ItemType, ItemTypeGroup, RecipeLevel } from "game/item/IItem";
-import { itemDescriptions, RecipeComponent } from "game/item/Items";
+import { ItemType, ItemTypeGroup, RecipeLevel, VehicleRenderType, VehicleType } from "game/item/IItem";
+import { itemDescriptions, RecipeComponent } from "game/item/ItemDescriptions";
 import { LootGroupType } from "game/item/LootGroups";
 import { ITile, TerrainType } from "game/tile/ITerrain";
 import Terrains from "game/tile/Terrains";
@@ -27,8 +28,9 @@ import Message from "language/dictionary/Message";
 import Note from "language/dictionary/Note";
 import Mod from "mod/Mod";
 import Register, { Registry } from "mod/ModRegistry";
-import World from "renderer/world/World";
+import { RenderSource, UpdateRenderFlag } from "renderer/IRenderer";
 import { RenderFlag } from "renderer/world/IWorldRenderer";
+import World from "renderer/world/World";
 import WorldRenderer from "renderer/world/WorldRenderer";
 import WalkToTileHandler from "ui/screen/screens/game/util/movement/WalkToTileHandler";
 import { HelpArticle } from "ui/screen/screens/menu/menus/help/HelpArticleDescriptions";
@@ -39,7 +41,6 @@ import { IVector2 } from "utilities/math/IVector";
 import Vector2 from "utilities/math/Vector2";
 import Vector3 from "utilities/math/Vector3";
 import { createSeededRandom, generalRandom } from "utilities/random/Random";
-import { RenderSource, UpdateRenderFlag } from "renderer/IRenderer";
 
 interface ITroposphereData {
 	seed: number;
@@ -75,13 +76,13 @@ export default class Troposphere extends Mod {
 	// Action Registrations
 	//
 
-	@Register.action("Fly", new Action(ActionArgument.ItemInventory)
+	@Register.action("FlyToTroposphere", new Action(ActionArgument.ItemInventory)
 		.setUsableBy(EntityType.Player)
 		.setHandler((action, item) => {
 			Troposphere.INSTANCE.setFlying(action.executor, action.executor.z !== Troposphere.INSTANCE.z, true);
 			item.damage(ActionType[action.type]);
 		}))
-	public readonly actionFly: ActionType;
+	public readonly actionFlyToTroposphere: ActionType;
 
 	@Register.action("GatherRainbow", new Action(ActionArgument.ItemNearby)
 		.setUsableBy(EntityType.Player)
@@ -99,7 +100,7 @@ export default class Troposphere extends Mod {
 			player.messages.source(Source.Action, Source.Resource)
 				.send(Troposphere.INSTANCE.messageGatheredRainbow);
 
-			renderer?.particle.create(player.island, player.x + player.direction.x, player.y + player.direction.y, player.z, { r: 12, g: 128, b: 247 });
+			renderers.particle.create(player.island, player.x + player.direction.x, player.y + player.direction.y, player.z, { r: 12, g: 128, b: 247 });
 
 			item.changeInto(Troposphere.INSTANCE.itemRainbowGlassBottle);
 
@@ -142,7 +143,7 @@ export default class Troposphere extends Mod {
 	//
 
 	@Register.item("Nimbus", {
-		use: [Registry<Troposphere>().get("actionFly")],
+		use: [ActionType.Ride, Registry<Troposphere>().get("actionFlyToTroposphere"), ActionType.Build],
 		recipe: {
 			components: [
 				RecipeComponent(ItemType.Feather, 2, 2, 2),
@@ -154,7 +155,19 @@ export default class Troposphere extends Mod {
 			reputation: 50,
 		},
 		disassemble: true,
-		durability: 15,
+		durability: 5000,
+		vehicle: {
+			type: VehicleType.Other,
+			renderType: VehicleRenderType.Stand,
+			movementSpeed: 4,
+			movementType: MoveType.Flying,
+			disallowedTileMessage: Message.None,
+		},
+		onUse: {
+			[ActionType.Build]: {
+				type: Registry<Troposphere>().get("doodadNimbus"),
+			},
+		},
 	})
 	public itemNimbus: ItemType;
 
@@ -162,7 +175,9 @@ export default class Troposphere extends Mod {
 		weight: 0.1,
 		use: [ActionType.DrinkItem, ActionType.Build],
 		onUse: {
-			[ActionType.Build]: Registry<Troposphere>().get("doodadRainbow"),
+			[ActionType.Build]: {
+				type: Registry<Troposphere>().get("doodadRainbow"),
+			}
 		},
 	})
 	public itemRainbow: ItemType;
@@ -221,15 +236,25 @@ export default class Troposphere extends Mod {
 	// Doodads
 	//
 
-	@Register.doodad("CloudBoulder", {
+	@Register.doodad("Nimbus", {
+		pickUp: [Registry<Troposphere>().get("itemNimbus")],
+		repairItem: Registry<Troposphere>().get("itemNimbus"),
+		actionTypes: [ActionType.Ride],
+		blockMove: true,
+		canBreak: true,
+		isFlammable: true,
 		particles: { r: 201, g: 224, b: 228 },
+		reduceDurabilityOnGather: true,
+		renderAsSprite: true,
+		isVehicle: true,
+		isAnimated: {
+			frameOffsetY: {
+				[0]: 0,
+				[1]: -0.0625,
+			},
+		},
 	})
-	public doodadCloudBoulder: DoodadType;
-
-	@Register.doodad("StormBoulder", {
-		particles: { r: 141, g: 155, b: 158 },
-	})
-	public doodadStormBoulder: DoodadType;
+	public doodadNimbus: DoodadType;
 
 	@Register.doodad("Rainbow", {
 		particles: { r: 90, g: 48, b: 141 },
@@ -247,7 +272,13 @@ export default class Troposphere extends Mod {
 		particles: { r: 55, g: 192, b: 255 },
 		freshWater: true,
 		noBackground: true,
-		tileOnConsume: Registry<Troposphere>().get("terrainHole"),
+		tileOnConsume: {
+			[BiomeType.Coastal]: Registry<Troposphere>().get("terrainHole"),
+			[BiomeType.IceCap]: Registry<Troposphere>().get("terrainHole"),
+			[BiomeType.Arid]: Registry<Troposphere>().get("terrainHole"),
+			[BiomeType.Volcanic]: Registry<Troposphere>().get("terrainHole"),
+			[BiomeType.Wetlands]: Registry<Troposphere>().get("terrainHole"),
+		},
 	})
 	public terrainCloudWater: TerrainType;
 
@@ -267,7 +298,7 @@ export default class Troposphere extends Mod {
 		leftOvers: [{ terrainType: Registry<Troposphere>().get("terrainCloudWater") }],
 		noGfxSwitch: true,
 		noBackground: true,
-		doodad: Registry<Troposphere>().get("doodadCloudBoulder"),
+		useDoodadLikeAdaptor: true,
 		resources: [
 			{ type: Registry<Troposphere>().get("itemCloudstone") },
 		],
@@ -280,7 +311,7 @@ export default class Troposphere extends Mod {
 		gatherSkillUse: SkillType.Mining,
 		gather: true,
 		noLos: true,
-		sound: SfxType.RockHit,
+		sound: SfxType.GraniteHit,
 		leftOvers: [{ terrainType: Registry<Troposphere>().get("terrainCloud") }],
 		noGfxSwitch: true,
 		isMountain: true,
@@ -314,7 +345,7 @@ export default class Troposphere extends Mod {
 		leftOvers: [{ terrainType: Registry<Troposphere>().get("terrainCloudWater") }],
 		noGfxSwitch: true,
 		noBackground: true,
-		doodad: Registry<Troposphere>().get("doodadStormBoulder"),
+		useDoodadLikeAdaptor: true,
 		resources: [
 			{ type: Registry<Troposphere>().get("itemSnowflakes"), chance: 5 },
 			{ type: Registry<Troposphere>().get("itemCloudstone") },
@@ -330,7 +361,7 @@ export default class Troposphere extends Mod {
 		gatherSkillUse: SkillType.Mining,
 		gather: true,
 		noLos: true,
-		sound: SfxType.RockHit,
+		sound: SfxType.GraniteHit,
 		leftOvers: [{ terrainType: Registry<Troposphere>().get("terrainStorm") }],
 		noGfxSwitch: true,
 		isMountain: true,
@@ -372,7 +403,7 @@ export default class Troposphere extends Mod {
 		damageType: DamageType.Slashing | DamageType.Blunt,
 		ai: AiType.Hostile,
 		moveType: MoveType.Land | MoveType.ShallowWater | MoveType.Water | MoveType.BreakDoodads,
-		canCauseStatus: [StatusType.Bleeding],
+		causesStatus: [[StatusType.Bleeding, BleedLevel.Major]],
 		spawnTiles: TileGroup.None,
 		spawn: {
 			[BiomeType.Coastal]: {
@@ -483,7 +514,7 @@ export default class Troposphere extends Mod {
 		loot: [{ item: ItemType.PileOfAsh }],
 		blood: { r: 141, g: 155, b: 158 },
 		aberrantBlood: { r: 95, g: 107, b: 122 },
-		canCauseStatus: [StatusType.Bleeding],
+		causesStatus: [[StatusType.Bleeding, BleedLevel.Major]],
 		spawn: {
 			[BiomeType.Coastal]: {
 				spawnsOnReputation: -24000,
@@ -517,7 +548,7 @@ export default class Troposphere extends Mod {
 		spawnTiles: TileGroup.None,
 		lootGroup: LootGroupType.High,
 		blood: { r: 238, g: 130, b: 134 },
-		canCauseStatus: [StatusType.Bleeding],
+		causesStatus: [[StatusType.Bleeding, BleedLevel.Major]],
 		spawn: {
 			[BiomeType.Coastal]: {
 				spawnsOnReputation: -32000,
@@ -594,7 +625,7 @@ export default class Troposphere extends Mod {
 		player.y = openTile.y;
 		player.setZ(z, false);
 
-		player.vehicleItemReference?.clear();
+		player.setVehicle(undefined);
 
 		player.skill.gain(this.skillFlying);
 
@@ -658,11 +689,11 @@ export default class Troposphere extends Mod {
 		let tile: ITile;
 		let terrainType: number;
 
-		const seededRandom = createSeededRandom(this.data.seed);
+		const seededRandom = createSeededRandom(false, this.data.seed);
 
 		for (let x = 0; x < game.mapSize; x++) {
 			for (let y = 0; y < game.mapSize; y++) {
-				tile = island.setTile(x, y, this.z, island.getTile(x, y, this.z) || {} as ITile);
+				tile = island.setTile(x, y, this.z, island.getTileSafe(x, y, this.z) ?? {} as ITile);
 
 				let tileGfx = 0;
 				const overworldTile = island.getTile(x, y, WorldZ.Overworld);
@@ -670,7 +701,7 @@ export default class Troposphere extends Mod {
 				const normalTerrainType = terrainDescription ? terrainDescription.terrainType : TerrainType.Grass;
 
 				switch (normalTerrainType) {
-					case TerrainType.Rocks:
+					case TerrainType.Granite:
 					case TerrainType.Sandstone:
 						terrainType = this.terrainCloudstone;
 						break;
@@ -766,9 +797,10 @@ export default class Troposphere extends Mod {
 			return;
 		}
 
+		const movementProgress = localPlayer.getMovementProgress(game.absoluteTime);
+
 		if (this.falling) {
-			const turnProgress = 1 - Math.min(1, Math.max(0, (localPlayer.movementFinishTime - game.absoluteTime) / (Delay.Movement * game.interval)));
-			tileScale = this.easeInCubic(turnProgress, tileScale * 0.25, tileScale * 0.75, 1.0);
+			tileScale = this.easeInCubic(movementProgress, tileScale * 0.25, tileScale * 0.75, 1.0);
 			renderer?.updateRender(RenderSource.Mod, UpdateRenderFlag.World);
 
 		} else {
@@ -776,7 +808,7 @@ export default class Troposphere extends Mod {
 		}
 
 		let position = new Vector2(localPlayer.fromX, localPlayer.fromY)
-			.lerp(localPlayer, localPlayer.movementProgress);
+			.lerp(localPlayer, movementProgress);
 
 		const scale = 16 * worldRenderer.getZoom() * 0.25;
 		position = new Vector2(position)
@@ -784,7 +816,12 @@ export default class Troposphere extends Mod {
 			.floor()
 			.divide(scale);
 
-		worldRenderer.renderWorldLayer(worldRenderer.layers[WorldZ.Overworld], position.x, position.y, tileScale, viewWidth, viewHeight, RenderFlag.Terrain, false);
+		const overworldLayer = worldRenderer.layers[WorldZ.Overworld];
+
+		const { viewportBounds } = worldRenderer.getBounds(game.absoluteTime);
+		overworldLayer.ensureRendered(viewportBounds);
+
+		worldRenderer.renderWorldLayer(overworldLayer, position.x, position.y, tileScale, viewWidth, viewHeight, RenderFlag.Terrain, false);
 	}
 
 	@EventHandler(EventBus.WorldRenderer, "shouldRender")
@@ -908,7 +945,7 @@ export default class Troposphere extends Mod {
 	}
 
 	@EventHandler(Creature, "canAttack")
-	protected canCreatureAttack(creature: Creature, enemy: Player | Creature): boolean | undefined {
+	protected canCreatureAttack(creature: Creature, enemy: Human | Creature): boolean | undefined {
 		if (creature.type !== this.creatureSprite) {
 			return;
 		}

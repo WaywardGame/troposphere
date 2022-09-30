@@ -68,7 +68,8 @@
 			"modTroposphereFlying": ["flying", "Increases your damage resistance when falling from the troposphere."]
 		},
 		"action": {
-			"modTroposphereFly": ["Fly", "Fly to and from the troposphere."],
+			"modTroposphereFly": ["Fly", "Fly around the world."],
+			"modTroposphereFlyToTroposphere": ["Fly to Troposphere", "Fly to and from the troposphere."],
 			"modTroposphereGatherRainbow": ["Gather Rainbow", "Gather a rainbow with a container."]
 		}
 	}

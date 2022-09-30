@@ -15,8 +15,8 @@ import { WorldZ } from "game/WorldZ";
 import Message from "language/dictionary/Message";
 import Note from "language/dictionary/Note";
 import Mod from "mod/Mod";
-import World from "renderer/world/World";
 import { RenderFlag } from "renderer/world/IWorldRenderer";
+import World from "renderer/world/World";
 import WorldRenderer from "renderer/world/WorldRenderer";
 import { HelpArticle } from "ui/screen/screens/menu/menus/help/HelpArticleDescriptions";
 import { IInjectionApi } from "utilities/class/Inject";
@@ -30,7 +30,7 @@ export default class Troposphere extends Mod {
     skillFlying: SkillType;
     readonly flyingHelpArticle: HelpArticle;
     readonly flyingNote: Note;
-    readonly actionFly: ActionType;
+    readonly actionFlyToTroposphere: ActionType;
     readonly actionGatherRainbow: ActionType;
     readonly messageFlewToTroposphere: Message;
     readonly messageFlewToTroposphereFailure: Message;
@@ -46,8 +46,7 @@ export default class Troposphere extends Mod {
     itemSnowflakes: ItemType;
     itemCloudstone: ItemType;
     groupTroposphere: ItemTypeGroup;
-    doodadCloudBoulder: DoodadType;
-    doodadStormBoulder: DoodadType;
+    doodadNimbus: DoodadType;
     doodadRainbow: DoodadType;
     terrainCloudWater: TerrainType;
     terrainCloud: TerrainType;
@@ -83,7 +82,7 @@ export default class Troposphere extends Mod {
     shouldSpawnCreatureFromGroup(manager: CreatureManager, creatureGroup: SpawnGroup, creaturePool: CreatureType[], x: number, y: number, z: number): boolean | undefined;
     protected canConsumeItem(human: Human, itemType: ItemType, actionType: ActionType): boolean | undefined;
     protected canCreatureMove(creature: Creature, tile?: ITile): boolean | undefined;
-    protected canCreatureAttack(creature: Creature, enemy: Player | Creature): boolean | undefined;
+    protected canCreatureAttack(creature: Creature, enemy: Human | Creature): boolean | undefined;
     protected canSeeCreature(_: any, creature: Creature, tile: ITile): boolean | undefined;
     protected getTilePenalty(_: any, penalty: number, tile: ITile): number;
     protected getFogColor(api: IInjectionApi<WorldRenderer, "getFogColor">): void;
