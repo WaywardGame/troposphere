@@ -22,7 +22,6 @@ import { ItemType, ItemTypeGroup, RecipeLevel, VehicleRenderType, VehicleType } 
 import { itemDescriptions, RecipeComponent } from "game/item/ItemDescriptions";
 import { LootGroupType } from "game/item/LootGroups";
 import { TerrainType } from "game/tile/ITerrain";
-import Terrains from "game/tile/Terrains";
 import Tile from "game/tile/Tile";
 import { WorldZ } from "game/WorldZ";
 import Message from "language/dictionary/Message";
@@ -660,9 +659,8 @@ export default class Troposphere extends Mod {
 			return false;
 		}
 
-		const terrainInfo = Terrains[terrainType];
-
-		return (!terrainInfo || (terrainInfo.water || terrainInfo.passable)) ? true : false;
+		const terrainDescription = tile.description();
+		return (!terrainDescription || (terrainDescription.water || terrainDescription.passable)) ? true : false;
 	}
 
 	public easeInCubic(time: number, start: number, change: number, duration: number): number {
@@ -703,8 +701,8 @@ export default class Troposphere extends Mod {
 					island.getTileSafe(x, y, this.z) ?? new Tile(island, x, y, this.z, (this.z * island.mapSizeSq) + (y * island.mapSize) + x));
 
 				const overworldTile = island.getTile(x, y, WorldZ.Overworld);
-				const terrainDescription = Terrains[overworldTile.type];
-				const normalTerrainType = terrainDescription ? terrainDescription.terrainType : TerrainType.Grass;
+				const terrainDescription = overworldTile.description();
+				const normalTerrainType = terrainDescription?.terrainType ?? TerrainType.Grass;
 
 				switch (normalTerrainType) {
 					case TerrainType.Granite:
