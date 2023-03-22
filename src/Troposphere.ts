@@ -615,7 +615,7 @@ export default class Troposphere extends Mod {
 	public setFlying(player: Player, flying: boolean, passTurn: boolean): boolean {
 		const z = !flying ? WorldZ.Overworld : this.z;
 
-		const openTile = player.tile.findMatchingTile(this.isFlyableTile.bind(this));
+		const openTile = player.island.getTile(player.x, player.y, z).findMatchingTile(this.isFlyableTile.bind(this));
 		if (openTile === undefined || player.z === WorldZ.Cave) {
 			if (passTurn) {
 				player.messages.source(Source.Action)
@@ -673,11 +673,14 @@ export default class Troposphere extends Mod {
 
 	@EventHandler(EventBus.Island, "createWorld")
 	public onCreateWorld(island: Island, world: World): void {
+		this.getLog().info(`Adding troposphere world layer ${this.z}`);
 		world.addLayer(this.z);
 	}
 
 	@EventHandler(EventBus.Island, "preLoadWorldDifferences")
 	public preLoadWorldDifferences(island: Island, generateNewWorld: boolean) {
+		this.getLog().info("Running troposphere mapgen");
+
 		// percentage
 		const boulderChance = 0.6;
 		const stormChance = 0.2;
