@@ -659,7 +659,7 @@ export default class Troposphere extends Mod {
 			return false;
 		}
 
-		const terrainDescription = tile.description();
+		const terrainDescription = tile.description;
 		return (!terrainDescription || (terrainDescription.water || terrainDescription.passable)) ? true : false;
 	}
 
@@ -704,7 +704,7 @@ export default class Troposphere extends Mod {
 					island.getTileSafe(x, y, this.z) ?? new Tile(island, x, y, this.z, (this.z * island.mapSizeSq) + (y * island.mapSize) + x));
 
 				const overworldTile = island.getTile(x, y, WorldZ.Overworld);
-				const terrainDescription = overworldTile.description();
+				const terrainDescription = overworldTile.description;
 				const normalTerrainType = terrainDescription?.terrainType ?? TerrainType.Grass;
 
 				switch (normalTerrainType) {
