@@ -76,7 +76,7 @@ export default class Troposphere extends Mod {
 	//
 
 	@Register.action("FlyToTroposphere", new Action(ActionArgument.ItemInventory)
-		.setUsableBy(EntityType.Player)
+		.setUsableBy(EntityType.Human)
 		.setHandler((action, item) => {
 			Troposphere.INSTANCE.setFlying(action.executor, action.executor.z !== Troposphere.INSTANCE.z, true);
 			item.damage(ActionType[action.type]);
@@ -84,7 +84,7 @@ export default class Troposphere extends Mod {
 	public readonly actionFlyToTroposphere: ActionType;
 
 	@Register.action("GatherRainbow", new Action(ActionArgument.ItemNearby)
-		.setUsableBy(EntityType.Player)
+		.setUsableBy(EntityType.Human)
 		.setHandler((action, item) => {
 			const player = action.executor;
 
@@ -612,13 +612,13 @@ export default class Troposphere extends Mod {
 		}
 	}
 
-	public setFlying(player: Player, flying: boolean, passTurn: boolean): boolean {
+	public setFlying(human: Human, flying: boolean, passTurn: boolean): boolean {
 		const z = !flying ? WorldZ.Overworld : this.z;
 
-		const openTile = player.island.getTile(player.x, player.y, z).findMatchingTile(this.isFlyableTile.bind(this));
-		if (openTile === undefined || player.z === WorldZ.Cave) {
+		const openTile = human.island.getTile(human.x, human.y, z).findMatchingTile(this.isFlyableTile.bind(this));
+		if (openTile === undefined || human.z === WorldZ.Cave) {
 			if (passTurn) {
-				player.messages.source(Source.Action)
+				human.messages.source(Source.Action)
 					.type(MessageType.Bad)
 					.send(flying ? this.messageFlewToTroposphereFailure : this.messageFlewToLandFailure);
 			}
@@ -626,24 +626,24 @@ export default class Troposphere extends Mod {
 			return false;
 		}
 
-		player.x = openTile.x;
-		player.y = openTile.y;
-		player.setZ(z, false);
+		human.x = openTile.x;
+		human.y = openTile.y;
+		human.setZ(z, false);
 
-		player.setVehicle(undefined);
+		human.setVehicle(undefined);
 
-		player.skill.gain(this.skillFlying);
+		human.skill.gain(this.skillFlying);
 
-		player.notes.write(this.flyingNote, {
-			hasHair: player.customization.hairStyle !== "None",
+		human.notes.write(this.flyingNote, {
+			hasHair: human.customization.hairStyle !== "None",
 		});
 
 		if (passTurn) {
-			player.messages.source(Source.Action, Source.Item)
+			human.messages.source(Source.Action, Source.Item)
 				.type(MessageType.Good)
 				.send(flying ? this.messageFlewToTroposphere : this.messageFlewToLand);
 
-			game.passTurn(player);
+			game.passTurn(human);
 		}
 
 		return true;

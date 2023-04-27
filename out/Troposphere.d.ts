@@ -68,7 +68,7 @@ export default class Troposphere extends Mod {
     initializeSaveData(data?: ITroposphereData): ITroposphereData;
     onLoad(): void;
     onUnload(): void;
-    setFlying(player: Player, flying: boolean, passTurn: boolean): boolean;
+    setFlying(human: Human, flying: boolean, passTurn: boolean): boolean;
     isFlyableTile(tile: Tile): boolean;
     easeInCubic(time: number, start: number, change: number, duration: number): number;
     onCreateWorld(island: Island, world: World): void;
