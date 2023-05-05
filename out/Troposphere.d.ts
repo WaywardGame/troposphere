@@ -10,7 +10,8 @@ import PlayerManager from "game/entity/player/PlayerManager";
 import { Game } from "game/Game";
 import Island from "game/island/Island";
 import { ItemType, ItemTypeGroup } from "game/item/IItem";
-import { ITile, TerrainType } from "game/tile/ITerrain";
+import { TerrainType } from "game/tile/ITerrain";
+import Tile from "game/tile/Tile";
 import { WorldZ } from "game/WorldZ";
 import Message from "language/dictionary/Message";
 import Note from "language/dictionary/Note";
@@ -20,7 +21,6 @@ import World from "renderer/world/World";
 import WorldRenderer from "renderer/world/WorldRenderer";
 import { HelpArticle } from "ui/screen/screens/menu/menus/help/HelpArticleDescriptions";
 import { IInjectionApi } from "utilities/class/Inject";
-import { IVector2 } from "utilities/math/IVector";
 interface ITroposphereData {
     seed: number;
 }
@@ -68,8 +68,8 @@ export default class Troposphere extends Mod {
     initializeSaveData(data?: ITroposphereData): ITroposphereData;
     onLoad(): void;
     onUnload(): void;
-    setFlying(player: Player, flying: boolean, passTurn: boolean): boolean;
-    isFlyableTile(island: Island, point: IVector2, tile: ITile): boolean;
+    setFlying(human: Human, flying: boolean, passTurn: boolean): boolean;
+    isFlyableTile(tile: Tile): boolean;
     easeInCubic(time: number, start: number, change: number, duration: number): number;
     onCreateWorld(island: Island, world: World): void;
     preLoadWorldDifferences(island: Island, generateNewWorld: boolean): void;
@@ -77,14 +77,14 @@ export default class Troposphere extends Mod {
     shouldRender(_: any): RenderFlag | undefined;
     onGameStart(game: Game, isLoadingSave: boolean, playedCount: number): void;
     onPlayerJoin(manager: PlayerManager, player: Player): void;
-    preMove(player: Player, fromX: number, fromY: number, fromZ: number, fromTile: ITile, nextX: number, nextY: number, nextZ: number, tile: ITile): boolean | void | undefined;
+    preMove(player: Player, fromTile: Tile, tile: Tile): boolean | void | undefined;
     onMoveComplete(player: Player): void;
-    shouldSpawnCreatureFromGroup(manager: CreatureManager, creatureGroup: SpawnGroup, creaturePool: CreatureType[], x: number, y: number, z: number): boolean | undefined;
+    shouldSpawnCreatureFromGroup(manager: CreatureManager, creatureGroup: SpawnGroup, creaturePool: CreatureType[], tile: Tile): boolean | undefined;
     protected canConsumeItem(human: Human, itemType: ItemType, actionType: ActionType): boolean | undefined;
-    protected canCreatureMove(creature: Creature, tile?: ITile): boolean | undefined;
+    protected canCreatureMove(creature: Creature, tile?: Tile): boolean | undefined;
     protected canCreatureAttack(creature: Creature, enemy: Human | Creature): boolean | undefined;
-    protected canSeeCreature(_: any, creature: Creature, tile: ITile): boolean | undefined;
-    protected getTilePenalty(_: any, penalty: number, tile: ITile): number;
+    protected canSeeCreature(_: any, creature: Creature, tile: Tile): boolean | undefined;
+    protected getTilePenalty(_: any, penalty: number, tile: Tile): number;
     protected getFogColor(api: IInjectionApi<WorldRenderer, "getFogColor">): void;
 }
 export {};
