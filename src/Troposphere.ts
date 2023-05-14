@@ -671,8 +671,8 @@ export default class Troposphere extends Mod {
 	////////////////////////////////////////
 	// Hooks
 
-	@EventHandler(EventBus.Island, "createWorld")
-	public onCreateWorld(island: Island, world: World): void {
+	@EventHandler(EventBus.Island, "preLoadWorld")
+	public onPreLoadWorld(island: Island, world: World): void {
 		this.getLog().info(`Adding troposphere world layer ${this.z}`);
 		world.addLayer(this.z);
 	}
