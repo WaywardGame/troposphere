@@ -71,7 +71,7 @@ export default class Troposphere extends Mod {
     setFlying(human: Human, flying: boolean, passTurn: boolean): boolean;
     isFlyableTile(tile: Tile): boolean;
     easeInCubic(time: number, start: number, change: number, duration: number): number;
-    onCreateWorld(island: Island, world: World): void;
+    onPreLoadWorld(island: Island, world: World): void;
     preLoadWorldDifferences(island: Island, generateNewWorld: boolean): void;
     preRenderWorld(worldRenderer: WorldRenderer, tileScale: number, viewWidth: number, viewHeight: number): void;
     shouldRender(_: any): RenderFlag | undefined;
