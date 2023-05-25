@@ -8,21 +8,21 @@
  * Wayward is a copyrighted and licensed work. Modification and/or distribution of any source files is prohibited. If you wish to modify the game in any way, please refer to the modding guide:
  * https://github.com/WaywardGame/types/wiki
  */
+import { Game } from "game/Game";
+import { WorldZ } from "game/WorldZ";
 import { DoodadType } from "game/doodad/IDoodad";
+import Human from "game/entity/Human";
+import { SkillType } from "game/entity/IHuman";
 import { ActionType } from "game/entity/action/IAction";
 import Creature from "game/entity/creature/Creature";
 import CreatureManager from "game/entity/creature/CreatureManager";
 import { CreatureType, SpawnGroup } from "game/entity/creature/ICreature";
-import Human from "game/entity/Human";
-import { SkillType } from "game/entity/IHuman";
 import Player from "game/entity/player/Player";
 import PlayerManager from "game/entity/player/PlayerManager";
-import { Game } from "game/Game";
 import Island from "game/island/Island";
 import { ItemType, ItemTypeGroup } from "game/item/IItem";
 import { TerrainType } from "game/tile/ITerrain";
 import Tile from "game/tile/Tile";
-import { WorldZ } from "game/WorldZ";
 import Message from "language/dictionary/Message";
 import Note from "language/dictionary/Note";
 import Mod from "mod/Mod";

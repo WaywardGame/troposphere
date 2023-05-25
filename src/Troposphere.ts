@@ -12,29 +12,30 @@
 import { SfxType } from "audio/IAudio";
 import { EventBus } from "event/EventBuses";
 import { EventHandler } from "event/EventManager";
+import { Game } from "game/Game";
+import { WorldZ } from "game/WorldZ";
 import { BiomeType } from "game/biome/IBiome";
 import { DoodadType } from "game/doodad/IDoodad";
+import Human from "game/entity/Human";
+import { AiType, DamageType, Defense, EntityType, MoveType, StatusType } from "game/entity/IEntity";
+import { Delay, HairColor, HairStyle, SkillType, SkinColor } from "game/entity/IHuman";
 import { Action } from "game/entity/action/Action";
 import { ActionArgument, ActionType } from "game/entity/action/IAction";
 import Creature from "game/entity/creature/Creature";
 import CreatureManager from "game/entity/creature/CreatureManager";
 import { CreatureType, SpawnGroup, TileGroup } from "game/entity/creature/ICreature";
-import Human from "game/entity/Human";
-import { AiType, DamageType, Defense, EntityType, MoveType, StatusType } from "game/entity/IEntity";
-import { Delay, HairColor, HairStyle, SkillType, SkinColor } from "game/entity/IHuman";
 import { MessageType, Source } from "game/entity/player/IMessageManager";
 import { PlayerState } from "game/entity/player/IPlayer";
 import Player from "game/entity/player/Player";
 import PlayerManager from "game/entity/player/PlayerManager";
 import { BleedLevel } from "game/entity/status/handler/IBleeding";
-import { Game } from "game/Game";
 import Island from "game/island/Island";
 import { ItemType, ItemTypeGroup, RecipeLevel, VehicleRenderType, VehicleType } from "game/item/IItem";
-import { itemDescriptions, RecipeComponent } from "game/item/ItemDescriptions";
+import { RecipeComponent, itemDescriptions } from "game/item/ItemDescriptions";
 import { LootGroupType } from "game/item/LootGroups";
 import { TerrainType } from "game/tile/ITerrain";
 import Tile from "game/tile/Tile";
-import { WorldZ } from "game/WorldZ";
+import TileBits from "game/tile/TileBits";
 import Message from "language/dictionary/Message";
 import Note from "language/dictionary/Note";
 import Mod from "mod/Mod";
@@ -49,7 +50,6 @@ import { IInjectionApi, Inject, InjectionPosition } from "utilities/class/Inject
 import Enums from "utilities/enum/Enums";
 import Vector2 from "utilities/math/Vector2";
 import Vector3 from "utilities/math/Vector3";
-import TileBits from "game/tile/TileBits";
 import { createSeededRandom, generalRandom } from "utilities/random/RandomUtilities";
 
 interface ITroposphereData {
@@ -684,13 +684,13 @@ export default class Troposphere extends Mod {
 
 	@EventHandler(EventBus.Island, "preLoadWorld")
 	public onPreLoadWorld(island: Island, world: World): void {
-		this.getLog().info(`Adding troposphere world layer ${this.z}`);
+		this.log.info(`Adding troposphere world layer ${this.z}`);
 		world.addLayer(this.z);
 	}
 
 	@EventHandler(EventBus.Island, "preLoadWorldDifferences")
 	public preLoadWorldDifferences(island: Island, generateNewWorld: boolean) {
-		this.getLog().info("Running troposphere mapgen");
+		this.log.info("Running troposphere mapgen");
 
 		// percentage
 		const boulderChance = 0.6;
