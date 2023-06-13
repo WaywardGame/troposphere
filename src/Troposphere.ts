@@ -12,23 +12,23 @@
 import { SfxType } from "audio/IAudio";
 import { EventBus } from "event/EventBuses";
 import { EventHandler } from "event/EventManager";
-import { Game } from "game/Game";
 import { WorldZ } from "game/WorldZ";
 import { BiomeType } from "game/biome/IBiome";
+import Doodad from "game/doodad/Doodad";
 import { DoodadType } from "game/doodad/IDoodad";
 import Human from "game/entity/Human";
 import { AiType, DamageType, Defense, EntityType, MoveType, StatusType } from "game/entity/IEntity";
 import { Delay, HairColor, HairStyle, SkillType, SkinColor } from "game/entity/IHuman";
 import { Action } from "game/entity/action/Action";
-import { ActionArgument, ActionType } from "game/entity/action/IAction";
+import { ActionArgument, ActionType, IActionUsable } from "game/entity/action/IAction";
 import Creature from "game/entity/creature/Creature";
 import CreatureManager from "game/entity/creature/CreatureManager";
 import { CreatureType, SpawnGroup, TileGroup } from "game/entity/creature/ICreature";
 import { MessageType, Source } from "game/entity/player/IMessageManager";
 import { PlayerState } from "game/entity/player/IPlayer";
 import Player from "game/entity/player/Player";
-import PlayerManager from "game/entity/player/PlayerManager";
 import { BleedLevel } from "game/entity/status/handler/IBleeding";
+import { IslandId } from "game/island/IIsland";
 import Island from "game/island/Island";
 import { ItemType, ItemTypeGroup, RecipeLevel, VehicleRenderType, VehicleType } from "game/item/IItem";
 import { RecipeComponent, itemDescriptions } from "game/item/ItemDescriptions";
@@ -50,10 +50,25 @@ import { IInjectionApi, Inject, InjectionPosition } from "utilities/class/Inject
 import Enums from "utilities/enum/Enums";
 import Vector2 from "utilities/math/Vector2";
 import Vector3 from "utilities/math/Vector3";
-import { createSeededRandom, generalRandom } from "utilities/random/RandomUtilities";
+import { generalRandom } from "utilities/random/RandomUtilities";
 
 interface ITroposphereData {
-	seed: number;
+	islands: Map<IslandId, ITroposphereIslandData>;
+	players: Map<string, ITropospherePlayerData>;
+}
+
+interface ITroposphereIslandData {
+	createdLayer: boolean;
+}
+
+interface ITropospherePlayerData {
+	createdItems: boolean;
+	falling: boolean;
+}
+
+interface ITroposphereGatherRanbowCanUse extends IActionUsable {
+	tile: Tile;
+	tileDoodad: Doodad;
 }
 
 export default class Troposphere extends Mod {
@@ -88,6 +103,18 @@ export default class Troposphere extends Mod {
 
 	@Register.action("FlyToTroposphere", new Action(ActionArgument.ItemInventory)
 		.setUsableBy(EntityType.Human)
+		.setPreExecutionHandler((action, weapon) => action.addItems(weapon))
+		.setCanUse((action, item) => {
+			if (!item.description?.use?.includes(Troposphere.INSTANCE.actionFlyToTroposphere)) {
+				return {
+					usable: false,
+				};
+			}
+
+			return {
+				usable: true,
+			};
+		})
 		.setHandler((action, item) => {
 			Troposphere.INSTANCE.setFlying(action.executor, action.executor.z !== Troposphere.INSTANCE.z, true);
 			item.damage(ActionType[action.type]);
@@ -96,16 +123,29 @@ export default class Troposphere extends Mod {
 
 	@Register.action("GatherRainbow", new Action(ActionArgument.ItemNearby)
 		.setUsableBy(EntityType.Human)
-		.setHandler((action, item) => {
+		.setCanUse<ITroposphereGatherRanbowCanUse>((action, item) => {
 			const player = action.executor;
 
 			const tile = player.facingTile;
 			const tileDoodad = tile.doodad;
 			if (!tileDoodad || tileDoodad.type !== Troposphere.INSTANCE.doodadRainbow) {
-				player.messages.source(Source.Action)
-					.send(Troposphere.INSTANCE.messageNoRainbow);
-				return;
+				return {
+					usable: false,
+					message: Troposphere.INSTANCE.messageNoRainbow,
+				};
 			}
+
+			return {
+				usable: true,
+				tile,
+				tileDoodad,
+			};
+		})
+		.setHandler((action, item) => {
+			const player = action.executor;
+
+			const tile = player.facingTile;
+			const tileDoodad = tile.doodad!;
 
 			player.messages.source(Source.Action, Source.Resource)
 				.send(Troposphere.INSTANCE.messageGatheredRainbow);
@@ -269,6 +309,7 @@ export default class Troposphere extends Mod {
 	@Register.doodad("Rainbow", {
 		particles: { r: 90, g: 48, b: 141 },
 		blockMove: true,
+		repairItem: Registry<Troposphere>().get("itemRainbow"),
 	})
 	public doodadRainbow: DoodadType;
 
@@ -496,8 +537,8 @@ export default class Troposphere extends Mod {
 			{ item: ItemType.Feather },
 		],
 		lootGroup: LootGroupType.Low,
-		weight: 0.1,
-		aberrantWeight: 0.2,
+		weight: 3.2,
+		aberrantWeight: 3.2,
 	}, {
 		resource: [
 			{ item: ItemType.Feather },
@@ -590,23 +631,30 @@ export default class Troposphere extends Mod {
 
 	@Mod.saveData<Troposphere>("Troposphere")
 	public data: ITroposphereData;
-	public firstLoad = true;
 
 	private get creaturePool() {
 		return [this.creatureBear, this.creatureRabbit, this.creatureCloudling, this.creatureLightningElemental];
 	}
-	private falling: boolean;
 
-	public override initializeSaveData(data?: ITroposphereData) {
-		if (data) {
-			this.firstLoad = false;
-			return data;
+	public override initializeSaveData(data?: ITroposphereData): ITroposphereData {
+		if (!data) {
+			data = {
+				islands: new Map(),
+				players: new Map(),
+			};
 		}
 
-		this.firstLoad = true;
-		return {
-			seed: new Date().getTime(),
-		};
+		// for backwards compat
+		if (!data.islands) {
+			data.islands = new Map();
+		}
+
+		// for backwards compat
+		if (!data.players) {
+			data.players = new Map();
+		}
+
+		return data;
 	}
 
 	public override onLoad(): void {
@@ -684,13 +732,26 @@ export default class Troposphere extends Mod {
 
 	@EventHandler(EventBus.Island, "preLoadWorld")
 	public onPreLoadWorld(island: Island, world: World): void {
-		this.log.info(`Adding troposphere world layer ${this.z}`);
-		world.addLayer(this.z);
+		const islandData = this.data.islands.get(island.id);
+		if (!islandData) {
+			this.data.islands.set(island.id, {
+				createdLayer: false,
+			});
+		}
+
+		island.world.addLayer(this.z);
+
+		this.log.info(`Added troposphere world layer ${this.z} for island ${island.id}`);
 	}
 
 	@EventHandler(EventBus.Island, "preLoadWorldDifferences")
 	public preLoadWorldDifferences(island: Island, generateNewWorld: boolean) {
-		this.log.info("Running troposphere mapgen");
+		const islandData = this.data.islands.get(island.id);
+		if (!islandData) {
+			return;
+		}
+
+		this.log.info(`Running troposphere mapgen. Has existing troposphere: ${islandData.createdLayer}`);
 
 		// percentage
 		const boulderChance = 0.6;
@@ -704,19 +765,19 @@ export default class Troposphere extends Mod {
 		const creatureAberrantChance = 0.05;
 		const creatureAberrantStormChance = 0.50;
 
-		let tile: Tile;
-		let terrainType: number;
+		const seededRandom = island.seededRandom.clone(false, island.seeds.base).advance();
 
-		const seededRandom = createSeededRandom(island.seeds.type, false, this.data.seed);
+		const doodadsToCreate: Array<{ tile: Tile; doodadType: DoodadType }> = [];
 
 		for (let x = 0; x < island.mapSize; x++) {
 			for (let y = 0; y < island.mapSize; y++) {
-				tile = island.setTile(x, y, this.z,
-					island.getTileSafe(x, y, this.z) ?? new Tile(island, x, y, this.z, (this.z * island.mapSizeSq) + (y * island.mapSize) + x));
+				const tile = island.createTile(x, y, this.z, (this.z * island.mapSizeSq) + (y * island.mapSize) + x);
 
 				const overworldTile = island.getTile(x, y, WorldZ.Overworld);
 				const terrainDescription = overworldTile.description;
 				const normalTerrainType = terrainDescription?.terrainType ?? TerrainType.Grass;
+
+				let terrainType: TerrainType;
 
 				switch (normalTerrainType) {
 					case TerrainType.Granite:
@@ -744,7 +805,8 @@ export default class Troposphere extends Mod {
 					case TerrainType.ShallowFreshWater:
 						if (seededRandom.float() <= rainbowChance) {
 							terrainType = this.terrainCloud;
-							island.doodads.create(this.doodadRainbow, tile);
+
+							doodadsToCreate.push({ tile, doodadType: this.doodadRainbow });
 
 						} else {
 							terrainType = this.terrainCloudWater;
@@ -779,13 +841,17 @@ export default class Troposphere extends Mod {
 			}
 		}
 
-		for (let x = 0; x < island.mapSize; x++) {
-			for (let y = 0; y < island.mapSize; y++) {
-				const tile = island.getTile(x, y, this.z);
+		if (!islandData.createdLayer) {
+			for (const doodadToCreate of doodadsToCreate) {
+				island.doodads.create(doodadToCreate.doodadType, doodadToCreate.tile);
+			}
 
-				terrainType = tile.type;
+			for (let x = 0; x < island.mapSize; x++) {
+				for (let y = 0; y < island.mapSize; y++) {
+					const tile = island.getTile(x, y, this.z);
 
-				if (generateNewWorld) {
+					const terrainType = tile.type;
+
 					switch (terrainType) {
 						case this.terrainCloud:
 						case this.terrainStorm:
@@ -803,6 +869,8 @@ export default class Troposphere extends Mod {
 					}
 				}
 			}
+
+			islandData.createdLayer = true;
 		}
 	}
 
@@ -814,7 +882,7 @@ export default class Troposphere extends Mod {
 
 		const movementProgress = localPlayer.getMovementProgress(game.absoluteTime);
 
-		if (this.falling) {
+		if (this.isPlayerFalling(localPlayer)) {
 			tileScale = this.easeInCubic(movementProgress, tileScale * 0.25, tileScale * 0.75, 1.0);
 			renderer?.updateRender(RenderSource.Mod, UpdateRenderFlag.World);
 
@@ -841,27 +909,29 @@ export default class Troposphere extends Mod {
 
 	@EventHandler(EventBus.WorldRenderer, "shouldRender")
 	public shouldRender(_: any): RenderFlag | undefined {
-		if (this.falling) {
+		if (this.isPlayerFalling(localPlayer)) {
 			return RenderFlag.Player;
 		}
 
 		return undefined;
 	}
 
-	@EventHandler(EventBus.Game, "play")
-	public onGameStart(game: Game, isLoadingSave: boolean, playedCount: number): void {
-		if ((!isLoadingSave || this.firstLoad) && !multiplayer.isConnected()) {
-			// give nimbus
-			localPlayer.createItemInInventory(this.itemNimbus);
+	@EventHandler(Player, "loadedOnIsland")
+	protected onPlayerSpawn(player: Player): void {
+		// give nimbus
+		let playerData = this.data.players.get(player.identifier);
+		if (playerData) {
+			playerData.falling = false;
+			return;
 		}
-	}
 
-	@EventHandler(EventBus.PlayerManager, "join")
-	public onPlayerJoin(manager: PlayerManager, player: Player): void {
-		if (player.island.items.getItemInContainer(player.inventory, this.itemNimbus) === undefined) {
-			// give nimbus if they don't have one
-			player.createItemInInventory(this.itemNimbus);
-		}
+		playerData = {
+			createdItems: true,
+			falling: false,
+		};
+		this.data.players.set(player.identifier, playerData);
+
+		player.createItemInInventory(this.itemNimbus);
 	}
 
 	@EventHandler(EventBus.Players, "preMove")
@@ -872,10 +942,7 @@ export default class Troposphere extends Mod {
 
 		const terrainType = tile.type;
 		if (terrainType === this.terrainHole) {
-			this.falling = true;
-
-			// localPlayer.addDelay(Delay.Collision, true);
-			// game.passTurn(localPlayer);
+			this.setPlayerFalling(player, true);
 
 			// no light blocking
 			renderer?.fieldOfView.compute(game.absoluteTime);
@@ -888,8 +955,9 @@ export default class Troposphere extends Mod {
 			return;
 		}
 
-		if (this.falling) {
-			this.falling = false;
+		if (this.isPlayerFalling(player)) {
+			this.setPlayerFalling(player, false);
+
 			this.setFlying(player, false, false);
 
 			if (player.state !== PlayerState.Ghost) {
@@ -1020,6 +1088,17 @@ export default class Troposphere extends Mod {
 
 		} else {
 			api.returnValue = Vector3.mix(Vector3.ZERO, ambientLightColor, ambientLightLevel * 2).xyz;
+		}
+	}
+
+	private isPlayerFalling(player: Human) {
+		return this.data.players.get(player.identifier)?.falling ? true : false;
+	}
+
+	private setPlayerFalling(player: Human, falling: boolean) {
+		const playerData = this.data.players.get(player.identifier);
+		if (playerData) {
+			playerData.falling = falling;
 		}
 	}
 }
