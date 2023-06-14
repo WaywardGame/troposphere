@@ -88,7 +88,7 @@ export default class Troposphere extends Mod {
     easeInCubic(time: number, start: number, change: number, duration: number): number;
     onPreLoadWorld(island: Island, world: World): void;
     preLoadWorldDifferences(island: Island, generateNewWorld: boolean): void;
-    preRenderWorld(worldRenderer: WorldRenderer, tileScale: number, viewWidth: number, viewHeight: number): void;
+    preRenderWorld(worldRenderer: WorldRenderer, tileScale: number, viewWidth: number, viewHeight: number, timestamp: number): void;
     shouldRender(_: any): RenderFlag | undefined;
     protected onPlayerSpawn(player: Player): void;
     preMove(player: Player, fromTile: Tile, tile: Tile): boolean | void | undefined;

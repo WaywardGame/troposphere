@@ -347,12 +347,12 @@ export default class Troposphere extends Mod {
 		noLos: true,
 		sound: SfxType.TreeHit,
 		leftOvers: [{ terrainType: Registry<Troposphere>().get("terrainCloudWater") }],
-		noBackground: true,
-		useDoodadLikeAdaptor: true,
 		resources: [
 			{ type: Registry<Troposphere>().get("itemCloudstone") },
 		],
-		terrainType: Registry<Troposphere>().get("terrainCloud"),
+		useDoodadLikeAdaptor: true,
+		background: Registry<Troposphere>().get("terrainCloud"),
+		terrainType: Registry<Troposphere>().get("terrainCloudBoulder"),
 	})
 	public terrainCloudBoulder: TerrainType;
 
@@ -393,14 +393,15 @@ export default class Troposphere extends Mod {
 		sound: SfxType.TreeHit,
 		leftOvers: [{ terrainType: Registry<Troposphere>().get("terrainCloudWater") }],
 		noBackground: true,
-		useDoodadLikeAdaptor: true,
 		resources: [
 			{ type: Registry<Troposphere>().get("itemSnowflakes"), chance: 5 },
 			{ type: Registry<Troposphere>().get("itemCloudstone") },
 			{ type: Registry<Troposphere>().get("itemCloudstone"), chance: 45 },
 			{ type: Registry<Troposphere>().get("itemCloudstone") },
 		],
-		terrainType: Registry<Troposphere>().get("terrainStorm"),
+		useDoodadLikeAdaptor: true,
+		background: Registry<Troposphere>().get("terrainStorm"),
+		terrainType: Registry<Troposphere>().get("terrainStormBoulder"),
 	})
 	public terrainStormBoulder: TerrainType;
 
@@ -754,7 +755,7 @@ export default class Troposphere extends Mod {
 		this.log.info(`Running troposphere mapgen. Has existing troposphere: ${islandData.createdLayer}`);
 
 		// percentage
-		const boulderChance = 0.6;
+		const boulderChance = 0.02;
 		const stormChance = 0.2;
 		const rainbowChance = 0.15;
 
@@ -815,14 +816,8 @@ export default class Troposphere extends Mod {
 						break;
 
 					default:
-						const doodad = overworldTile.doodad;
-						if (doodad && doodad.canGrow()) {
-							if (seededRandom.float() <= boulderChance) {
-								terrainType = this.terrainCloudBoulder;
-
-							} else {
-								terrainType = this.terrainCloud;
-							}
+						if (seededRandom.float() <= boulderChance) {
+							terrainType = this.terrainCloudBoulder;
 
 						} else {
 							terrainType = this.terrainCloud;
@@ -875,12 +870,12 @@ export default class Troposphere extends Mod {
 	}
 
 	@EventHandler(EventBus.WorldRenderer, "preRenderWorld")
-	public preRenderWorld(worldRenderer: WorldRenderer, tileScale: number, viewWidth: number, viewHeight: number) {
+	public preRenderWorld(worldRenderer: WorldRenderer, tileScale: number, viewWidth: number, viewHeight: number, timestamp: number) {
 		if (localPlayer.z !== this.z) {
 			return;
 		}
 
-		const movementProgress = localPlayer.getMovementProgress(game.absoluteTime);
+		const movementProgress = localPlayer.getMovementProgress(timestamp);
 
 		if (this.isPlayerFalling(localPlayer)) {
 			tileScale = this.easeInCubic(movementProgress, tileScale * 0.25, tileScale * 0.75, 1.0);
@@ -893,7 +888,7 @@ export default class Troposphere extends Mod {
 		let position = new Vector2(localPlayer.fromX, localPlayer.fromY)
 			.lerp(localPlayer, movementProgress);
 
-		const scale = 16 * worldRenderer.getZoom() * 0.25;
+		const scale = 16 * worldRenderer.getZoom() * 0.5;
 		position = new Vector2(position)
 			.multiply(scale)
 			.floor()
@@ -901,8 +896,8 @@ export default class Troposphere extends Mod {
 
 		const overworldLayer = worldRenderer.layers[WorldZ.Overworld];
 
-		const { viewportBounds } = worldRenderer.getBounds(game.absoluteTime);
-		overworldLayer.ensureRendered(viewportBounds);
+		const { viewportBounds } = worldRenderer.getBounds(timestamp);
+		overworldLayer.ensureRendered(viewportBounds, true);
 
 		worldRenderer.renderWorldLayer(overworldLayer, position.x, position.y, tileScale, viewWidth, viewHeight, RenderFlag.Terrain, false);
 	}
