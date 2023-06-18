@@ -772,11 +772,11 @@ export default class Troposphere extends Mod {
 
 		for (let x = 0; x < island.mapSize; x++) {
 			for (let y = 0; y < island.mapSize; y++) {
-				const tile = island.createTile(x, y, this.z, (this.z * island.mapSizeSq) + (y * island.mapSize) + x);
-
 				const overworldTile = island.getTile(x, y, WorldZ.Overworld);
 				const terrainDescription = overworldTile.description;
 				const normalTerrainType = terrainDescription?.terrainType ?? TerrainType.Grass;
+
+				let createDoodad: DoodadType | undefined;
 
 				let terrainType: TerrainType;
 
@@ -806,8 +806,7 @@ export default class Troposphere extends Mod {
 					case TerrainType.ShallowFreshWater:
 						if (seededRandom.float() <= rainbowChance) {
 							terrainType = this.terrainCloud;
-
-							doodadsToCreate.push({ tile, doodadType: this.doodadRainbow });
+							createDoodad = this.doodadRainbow;
 
 						} else {
 							terrainType = this.terrainCloudWater;
@@ -832,7 +831,11 @@ export default class Troposphere extends Mod {
 					}
 				}
 
-				tile.rendererData = TileBits.setTypeRaw(tile.rendererData, terrainType);
+				const rendererData = TileBits.setTypeRaw(0, terrainType);
+				const tile = island.createTile(x, y, this.z, (this.z * island.mapSizeSq) + (y * island.mapSize) + x, rendererData, overworldTile.quality);
+				if (createDoodad !== undefined) {
+					doodadsToCreate.push({ tile, doodadType: createDoodad });
+				}
 			}
 		}
 
