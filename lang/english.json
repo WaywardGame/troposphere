@@ -41,6 +41,7 @@
 		"doodad": {
 			"modTroposphereCloudBoulder": "cloud boulder",
 			"modTroposphereStormBoulder": "storm boulder",
+			"modTroposphereNimbus": "nimbus",
 			"modTroposphereRainbow": ["rainbow", "A magical thing of beauty and colorful delight, ready to gather with a bottle and destroy for your own gain."]
 		},
 		"terrain": {

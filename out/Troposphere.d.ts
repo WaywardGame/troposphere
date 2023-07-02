@@ -8,7 +8,6 @@
  * Wayward is a copyrighted and licensed work. Modification and/or distribution of any source files is prohibited. If you wish to modify the game in any way, please refer to the modding guide:
  * https://github.com/WaywardGame/types/wiki
  */
-import { Game } from "game/Game";
 import { WorldZ } from "game/WorldZ";
 import { DoodadType } from "game/doodad/IDoodad";
 import Human from "game/entity/Human";
@@ -18,7 +17,7 @@ import Creature from "game/entity/creature/Creature";
 import CreatureManager from "game/entity/creature/CreatureManager";
 import { CreatureType, SpawnGroup } from "game/entity/creature/ICreature";
 import Player from "game/entity/player/Player";
-import PlayerManager from "game/entity/player/PlayerManager";
+import { IslandId } from "game/island/IIsland";
 import Island from "game/island/Island";
 import { ItemType, ItemTypeGroup } from "game/item/IItem";
 import { TerrainType } from "game/tile/ITerrain";
@@ -32,7 +31,15 @@ import WorldRenderer from "renderer/world/WorldRenderer";
 import { HelpArticle } from "ui/screen/screens/menu/menus/help/HelpArticleDescriptions";
 import { IInjectionApi } from "utilities/class/Inject";
 interface ITroposphereData {
-    seed: number;
+    islands: Map<IslandId, ITroposphereIslandData>;
+    players: Map<string, ITropospherePlayerData>;
+}
+interface ITroposphereIslandData {
+    createdLayer: boolean;
+}
+interface ITropospherePlayerData {
+    createdItems: boolean;
+    falling: boolean;
 }
 export default class Troposphere extends Mod {
     static readonly INSTANCE: Troposphere;
@@ -72,9 +79,7 @@ export default class Troposphere extends Mod {
     creatureLightningElemental: CreatureType;
     creatureSprite: CreatureType;
     data: ITroposphereData;
-    firstLoad: boolean;
     private get creaturePool();
-    private falling;
     initializeSaveData(data?: ITroposphereData): ITroposphereData;
     onLoad(): void;
     onUnload(): void;
@@ -83,10 +88,9 @@ export default class Troposphere extends Mod {
     easeInCubic(time: number, start: number, change: number, duration: number): number;
     onPreLoadWorld(island: Island, world: World): void;
     preLoadWorldDifferences(island: Island, generateNewWorld: boolean): void;
-    preRenderWorld(worldRenderer: WorldRenderer, tileScale: number, viewWidth: number, viewHeight: number): void;
+    preRenderWorld(worldRenderer: WorldRenderer, tileScale: number, viewWidth: number, viewHeight: number, timestamp: number): void;
     shouldRender(_: any): RenderFlag | undefined;
-    onGameStart(game: Game, isLoadingSave: boolean, playedCount: number): void;
-    onPlayerJoin(manager: PlayerManager, player: Player): void;
+    protected onPlayerSpawn(player: Player): void;
     preMove(player: Player, fromTile: Tile, tile: Tile): boolean | void | undefined;
     onMoveComplete(player: Player): void;
     shouldSpawnCreatureFromGroup(manager: CreatureManager, creatureGroup: SpawnGroup, creaturePool: CreatureType[], tile: Tile): boolean | undefined;
@@ -96,5 +100,7 @@ export default class Troposphere extends Mod {
     protected canSeeCreature(_: any, creature: Creature, tile: Tile): boolean | undefined;
     protected getTilePenalty(_: any, penalty: number, tile: Tile): number;
     protected getFogColor(api: IInjectionApi<WorldRenderer, "getFogColor">): void;
+    private isPlayerFalling;
+    private setPlayerFalling;
 }
 export {};
