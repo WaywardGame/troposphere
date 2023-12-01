@@ -4,7 +4,7 @@
 	"version": "1.4.1",
 	"author": "Spacetech & Drathy",
 	"github": "https://github.com/WaywardGame/troposphere",
-	"waywardVersion": "2.13.3-beta",
+	"waywardVersion": "2.14.0-beta",
 	"file": "out/Troposphere.js",
 	"languages": [
 		"lang/english"
