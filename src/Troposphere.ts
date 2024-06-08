@@ -290,7 +290,7 @@ export default class Troposphere extends Mod {
 
 	@Register.doodad("Nimbus", {
 		pickUp: [Registry<Troposphere>().get("itemNimbus")],
-		repairItem: Registry<Troposphere>().get("itemNimbus"),
+		asItem: Registry<Troposphere>().get("itemNimbus"),
 		actionTypes: [ActionType.Ride],
 		blockMove: true,
 		canBreak: true,
@@ -311,7 +311,7 @@ export default class Troposphere extends Mod {
 	@Register.doodad("Rainbow", {
 		particles: { r: 90, g: 48, b: 141 },
 		blockMove: true,
-		repairItem: Registry<Troposphere>().get("itemRainbow"),
+		asItem: Registry<Troposphere>().get("itemRainbow"),
 	})
 	public doodadRainbow: DoodadType;
 
