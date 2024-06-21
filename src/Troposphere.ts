@@ -206,7 +206,7 @@ export default class Troposphere extends Mod {
 			level: RecipeLevel.Simple,
 			runeChance: [Deity.Good, 0.05],
 		},
-		disassemble: true,
+		storeDisassemblyItems: true,
 		durability: 5000,
 		vehicle: {
 			type: VehicleType.Other,
