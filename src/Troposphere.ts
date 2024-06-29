@@ -45,7 +45,6 @@ import { RenderSource, UpdateRenderFlag } from "@wayward/game/renderer/IRenderer
 import { RenderFlag } from "@wayward/game/renderer/world/IWorldRenderer";
 import World from "@wayward/game/renderer/world/World";
 import { WorldRenderer } from "@wayward/game/renderer/world/WorldRenderer";
-import WalkToTileHandler from "@wayward/game/ui/screen/screens/game/util/movement/WalkToTileHandler";
 import { HelpArticle } from "@wayward/game/ui/screen/screens/menu/menus/help/HelpArticleDescriptions";
 import Enums from "@wayward/game/utilities/enum/Enums";
 import Vector2 from "@wayward/game/utilities/math/Vector2";
@@ -1083,7 +1082,7 @@ export default class Troposphere extends Mod {
 		return false;
 	}
 
-	@EventHandler(WalkToTileHandler, "getTilePenalty")
+	@EventHandler(Human, "getTilePenalty")
 	protected getTilePenalty(_: any, penalty: number, tile: Tile): number {
 		if (tile.type === this.terrainHole) {
 			penalty += 1000;
