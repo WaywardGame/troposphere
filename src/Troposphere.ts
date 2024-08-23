@@ -1,5 +1,5 @@
 /*!
- * Copyright 2011-2023 Unlok
+ * Copyright 2011-2024 Unlok
  * https://www.unlok.ca
  *
  * Credits & Thanks:
@@ -16,18 +16,21 @@ import { BiomeType } from "@wayward/game/game/biome/IBiome";
 import { Deity } from "@wayward/game/game/deity/Deity";
 import Doodad from "@wayward/game/game/doodad/Doodad";
 import { DoodadType } from "@wayward/game/game/doodad/IDoodad";
-import Human from "@wayward/game/game/entity/Human";
-import { AiType, DamageType, Defense, EntityType, MoveType, StatusType } from "@wayward/game/game/entity/IEntity";
-import { Delay, HairColor, HairStyle, SkillType, SkinColor } from "@wayward/game/game/entity/IHuman";
 import { Action } from "@wayward/game/game/entity/action/Action";
 import { ActionArgument, ActionType, IActionUsable } from "@wayward/game/game/entity/action/IAction";
+import { AiType } from "@wayward/game/game/entity/AI";
 import Creature from "@wayward/game/game/entity/creature/Creature";
-import CreatureManager from "@wayward/game/game/entity/creature/CreatureManager";
-import { CreatureType, SpawnGroup, TileGroup } from "@wayward/game/game/entity/creature/ICreature";
+import { CreatureType, TileGroup } from "@wayward/game/game/entity/creature/ICreature";
+import creatureZoneDescriptions from "@wayward/game/game/entity/creature/zone/CreatureZoneDescriptions";
+import { IBiomeCreatureZones } from "@wayward/game/game/entity/creature/zone/ICreatureZone";
+import Human from "@wayward/game/game/entity/Human";
+import { DamageType, Defense, EntityType, MoveType } from "@wayward/game/game/entity/IEntity";
+import { Delay, HairColor, HairStyle, SkillType, SkinColor } from "@wayward/game/game/entity/IHuman";
 import { MessageType, Source } from "@wayward/game/game/entity/player/IMessageManager";
 import { PlayerState } from "@wayward/game/game/entity/player/IPlayer";
 import Player from "@wayward/game/game/entity/player/Player";
 import { BleedLevel } from "@wayward/game/game/entity/status/handler/IBleeding";
+import { StatusType } from "@wayward/game/game/entity/status/IStatus";
 import { IslandId } from "@wayward/game/game/island/IIsland";
 import Island from "@wayward/game/game/island/Island";
 import { ItemType, ItemTypeGroup, RecipeLevel, VehicleRenderType, VehicleType } from "@wayward/game/game/item/IItem";
@@ -37,10 +40,11 @@ import { TerrainType } from "@wayward/game/game/tile/ITerrain";
 import { TileEventType } from "@wayward/game/game/tile/ITileEvent";
 import Tile from "@wayward/game/game/tile/Tile";
 import TileBits from "@wayward/game/game/tile/TileBits";
+import { PartOfDay } from "@wayward/game/game/time/ITimeManager";
 import Message from "@wayward/game/language/dictionary/Message";
 import Note from "@wayward/game/language/dictionary/Note";
 import Mod from "@wayward/game/mod/Mod";
-import Register, { Registry } from "@wayward/game/mod/ModRegistry";
+import Register, { IOverrideDescription, OverrideDecorator, Registry } from "@wayward/game/mod/ModRegistry";
 import { RenderSource, UpdateRenderFlag } from "@wayward/game/renderer/IRenderer";
 import { RenderFlag } from "@wayward/game/renderer/world/IWorldRenderer";
 import World from "@wayward/game/renderer/world/World";
@@ -49,7 +53,9 @@ import { HelpArticle } from "@wayward/game/ui/screen/screens/menu/menus/help/Hel
 import Enums from "@wayward/game/utilities/enum/Enums";
 import Vector2 from "@wayward/game/utilities/math/Vector2";
 import Vector3 from "@wayward/game/utilities/math/Vector3";
+import Merge from "@wayward/game/utilities/object/Merge";
 import { IInjectionApi, Inject, InjectionPosition } from "@wayward/utilities/class/Inject";
+import { Tuple } from "@wayward/utilities/collection/Tuple";
 import { WorldZ } from "@wayward/utilities/game/WorldZ";
 import { generalRandom } from "@wayward/utilities/random/RandomUtilities";
 
@@ -72,6 +78,109 @@ interface ITroposphereGatherRanbowCanUse extends IActionUsable {
 	tile: Tile;
 	tileDoodad: Doodad;
 }
+
+////////////////////////////////////
+// Creature Zone Descriptions
+//
+
+const CREATURE_ZONES: IBiomeCreatureZones = {
+	tiers: {
+		tier0: {
+			[Registry<Troposphere>().get("z")]: [
+				{
+					[PartOfDay.Always]: [
+						[Registry<Troposphere>().get("creatureCloudRabbit")],
+					],
+				},
+			],
+		},
+		tier1: {
+			[Registry<Troposphere>().get("z")]: [
+				{
+					[PartOfDay.AllDaytime]: [
+						[Registry<Troposphere>().get("creatureCloudRabbit")],
+					],
+					[PartOfDay.AllNighttime]: [
+						[Registry<Troposphere>().get("creatureCloudling")],
+					],
+				},
+			],
+		},
+		tier2: {
+			[Registry<Troposphere>().get("z")]: [
+				{
+					[PartOfDay.AllDaytime]: [
+						[Registry<Troposphere>().get("creatureCloudRabbit")],
+						[Registry<Troposphere>().get("creatureCloudling")],
+					],
+					[PartOfDay.AllNighttime]: [
+						[Registry<Troposphere>().get("creatureCloudBear")],
+					],
+				},
+			],
+		},
+		tier3: {
+			[Registry<Troposphere>().get("z")]: [
+				{
+					[PartOfDay.Always]: [
+						[Registry<Troposphere>().get("creatureCloudRabbit"), Registry<Troposphere>().get("creatureCloudBear")],
+						[Registry<Troposphere>().get("creatureCloudling"), Registry<Troposphere>().get("creatureCloudBear")],
+					],
+				},
+			],
+		},
+		tier4: {
+			[Registry<Troposphere>().get("z")]: [
+				{
+					[PartOfDay.AllDaytime]: [
+						[Registry<Troposphere>().get("creatureCloudBear")],
+						[Registry<Troposphere>().get("creatureCloudling"), Registry<Troposphere>().get("creatureCloudling"), Registry<Troposphere>().get("creatureCloudRabbit")],
+					],
+					[PartOfDay.AllNighttime]: [
+						[Registry<Troposphere>().get("creatureLightningElemental")],
+					],
+				},
+			],
+		},
+		tier5: {
+			[Registry<Troposphere>().get("z")]: [
+				{
+					[PartOfDay.Always]: [
+						[Registry<Troposphere>().get("creatureCloudBear"), Registry<Troposphere>().get("creatureLightningElemental")],
+						[Registry<Troposphere>().get("creatureLightningElemental"), Registry<Troposphere>().get("creatureCloudling"), Registry<Troposphere>().get("creatureCloudRabbit")],
+						[Registry<Troposphere>().get("creatureCloudBear")],
+					],
+				},
+			],
+		},
+		tier6: {
+			[Registry<Troposphere>().get("z")]: [
+				{
+					[PartOfDay.Always]: [
+						[Registry<Troposphere>().get("creatureCloudBear"), Registry<Troposphere>().get("creatureLightningElemental")],
+						[Registry<Troposphere>().get("creatureLightningElemental")],
+					],
+					[PartOfDay.AllNighttime]: [
+						[Registry<Troposphere>().get("creatureSprite"), Registry<Troposphere>().get("creatureLightningElemental")],
+					],
+				},
+			],
+		},
+		tier7: {
+			[Registry<Troposphere>().get("z")]: [
+				{
+					[PartOfDay.Always]: [
+						[Registry<Troposphere>().get("creatureSprite")],
+						[Registry<Troposphere>().get("creatureLightningElemental"), Registry<Troposphere>().get("creatureSprite"), Registry<Troposphere>().get("creatureCloudBear")],
+					],
+					[PartOfDay.AllNighttime]: [
+						[Registry<Troposphere>().get("creatureSprite")],
+					],
+				},
+			],
+		},
+	},
+};
 
 export default class Troposphere extends Mod {
 
@@ -315,6 +424,33 @@ export default class Troposphere extends Mod {
 	public doodadRainbow: DoodadType;
 
 	////////////////////////////////////
+	// Tile Groups
+	//
+	@Register.tileGroup("CloudCover", new Set([
+		Registry<Troposphere>().get("terrainCloud"),
+		Registry<Troposphere>().get("terrainStorm"),
+	]))
+	public tileGroupCloudCover: TileGroup;
+
+	@Register.tileGroup("StormClouds", new Set([
+		Registry<Troposphere>().get("terrainCloudBoulder"),
+		Registry<Troposphere>().get("terrainCloudstone"),
+		Registry<Troposphere>().get("terrainStormBoulder"),
+		Registry<Troposphere>().get("terrainStormstone"),
+	]))
+	public tileGroupStormClouds: TileGroup;
+
+	@Register.tileGroup("AllTroposphere", new Set([
+		Registry<Troposphere>().get("terrainCloud"),
+		Registry<Troposphere>().get("terrainStorm"),
+		Registry<Troposphere>().get("terrainCloudBoulder"),
+		Registry<Troposphere>().get("terrainCloudstone"),
+		Registry<Troposphere>().get("terrainStormBoulder"),
+		Registry<Troposphere>().get("terrainStormstone"),
+	]))
+	public tileGroupAllTroposphere: TileGroup;
+
+	////////////////////////////////////
 	// Terrain
 	//
 
@@ -456,18 +592,6 @@ export default class Troposphere extends Mod {
 		ai: AiType.Hostile,
 		moveType: MoveType.Land | MoveType.ShallowWater | MoveType.Water | MoveType.BreakDoodads,
 		causesStatus: [[StatusType.Bleeding, BleedLevel.Major]],
-		spawnTiles: TileGroup.None,
-		spawn: {
-			[BiomeType.Coastal]: {
-				spawnsOnAlignment: -16000,
-			},
-			[BiomeType.IceCap]: {
-				spawnsOnAlignment: -16000,
-			},
-			[BiomeType.Arid]: {
-				spawnsOnAlignment: -16000,
-			},
-		},
 		runeChance: [Deity.Good, 0.3],
 		makeNoise: true,
 		loot: [{
@@ -476,6 +600,7 @@ export default class Troposphere extends Mod {
 		}],
 		weight: 23.4,
 		aberrantWeight: 23.4,
+		spawnTiles: Registry<Troposphere>().get("tileGroupCloudCover"),
 	}, {
 		resource: [
 			{ item: ItemType.Cotton },
@@ -491,7 +616,7 @@ export default class Troposphere extends Mod {
 		decay: 2800,
 		skill: SkillType.Anatomy,
 	})
-	public creatureBear: CreatureType;
+	public creatureCloudBear: CreatureType;
 
 	@Register.creature("CloudRabbit", {
 		minhp: 3,
@@ -502,13 +627,13 @@ export default class Troposphere extends Mod {
 		damageType: DamageType.Slashing,
 		ai: AiType.Scared,
 		moveType: MoveType.Land | MoveType.ShallowWater,
-		spawnTiles: TileGroup.None,
 		runeChance: [Deity.Evil, 0.2],
 		makeNoise: true,
 		jumpOver: true,
 		loot: [{ item: Registry<Troposphere>().get("itemSnowflakes") }],
 		weight: 4.5,
 		aberrantWeight: 4.6,
+		spawnTiles: Registry<Troposphere>().get("tileGroupCloudCover"),
 	}, {
 		resource: [
 			{ item: ItemType.Cotton },
@@ -519,7 +644,7 @@ export default class Troposphere extends Mod {
 		decay: 2400,
 		skill: SkillType.Anatomy,
 	})
-	public creatureRabbit: CreatureType;
+	public creatureCloudRabbit: CreatureType;
 
 	@Register.creature("Cloudling", {
 		minhp: 4,
@@ -533,7 +658,6 @@ export default class Troposphere extends Mod {
 		ai: AiType.Neutral,
 		moveType: MoveType.Flying,
 		runeChance: [Deity.Good, 0.1],
-		spawnTiles: TileGroup.None,
 		loot: [
 			{
 				item: Registry<Troposphere>().get("itemSnowflakes"),
@@ -544,6 +668,7 @@ export default class Troposphere extends Mod {
 		lootGroup: LootGroupType.Low,
 		weight: 3.2,
 		aberrantWeight: 3.2,
+		spawnTiles: Registry<Troposphere>().get("tileGroupAllTroposphere"),
 	}, {
 		resource: [
 			{ item: ItemType.Feather },
@@ -567,27 +692,16 @@ export default class Troposphere extends Mod {
 		damageType: DamageType.Fire | DamageType.Blunt,
 		ai: AiType.Hostile,
 		moveType: MoveType.Flying,
-		spawnTiles: TileGroup.None,
 		lootGroup: LootGroupType.High,
 		loot: [{ item: ItemType.PileOfAsh }],
 		blood: { r: 141, g: 155, b: 158 },
 		aberrantBlood: { r: 95, g: 107, b: 122 },
 		causesStatus: [[StatusType.Bleeding, BleedLevel.Major]],
-		spawn: {
-			[BiomeType.Coastal]: {
-				spawnsOnAlignment: -24000,
-			},
-			[BiomeType.IceCap]: {
-				spawnsOnAlignment: -24000,
-			},
-			[BiomeType.Arid]: {
-				spawnsOnAlignment: -24000,
-			},
-		},
 		runeChance: [Deity.Good, 0.3],
 		makeNoise: true,
 		weight: 23.4,
 		aberrantWeight: 25.5,
+		spawnTiles: Registry<Troposphere>().get("tileGroupStormClouds"),
 	}, {
 		resource: [{ item: ItemType.PileOfAsh }],
 		decay: 400,
@@ -596,34 +710,23 @@ export default class Troposphere extends Mod {
 	public creatureLightningElemental: CreatureType;
 
 	@Register.creature("Sprite", {
-		minhp: 30,
-		maxhp: 38,
-		minatk: 11,
-		maxatk: 19,
-		defense: new Defense(5)
-			.setResistance(DamageType.Fire, 100),
-		damageType: DamageType.Fire | DamageType.Blunt,
+		minhp: 39,
+		maxhp: 42,
+		minatk: 18,
+		maxatk: 24,
+		defense: new Defense(6)
+			.setResistance(DamageType.Cold, 100),
+		damageType: DamageType.Cold | DamageType.Blunt,
 		ai: AiType.Hostile,
 		moveType: MoveType.Flying,
-		spawnTiles: TileGroup.None,
 		lootGroup: LootGroupType.High,
 		blood: { r: 238, g: 130, b: 134 },
 		causesStatus: [[StatusType.Bleeding, BleedLevel.Major]],
-		spawn: {
-			[BiomeType.Coastal]: {
-				spawnsOnAlignment: -32000,
-			},
-			[BiomeType.IceCap]: {
-				spawnsOnAlignment: -32000,
-			},
-			[BiomeType.Arid]: {
-				spawnsOnAlignment: -32000,
-			},
-		},
 		runeChance: [Deity.Good, 0.5],
 		makeNoise: true,
 		weight: 0.1,
 		aberrantWeight: 0.2,
+		spawnTiles: Registry<Troposphere>().get("tileGroupStormClouds"),
 	}, {
 		resource: [{ item: ItemType.Ectoplasm }],
 		decay: 100,
@@ -631,15 +734,23 @@ export default class Troposphere extends Mod {
 	public creatureSprite: CreatureType;
 
 	////////////////////////////////////
+	// Creature Zone Overrides
+	//
+
+	@Register.bulk<"override", OverrideDecorator<typeof creatureZoneDescriptions, BiomeType>>("override", ...Enums.values(BiomeType)
+		.map(biome => Tuple((): IOverrideDescription<typeof creatureZoneDescriptions, BiomeType> => ({
+			object: creatureZoneDescriptions,
+			property: biome,
+			value: Merge(creatureZoneDescriptions[biome], CREATURE_ZONES),
+		}))))
+	public creatureZoneOverrides: (typeof creatureZoneDescriptions)[];
+
+	////////////////////////////////////
 	// Fields
 	//
 
 	@Mod.saveData<Troposphere>("Troposphere")
 	public data: ITroposphereData;
-
-	private get creaturePool(): CreatureType[] {
-		return [this.creatureBear, this.creatureRabbit, this.creatureCloudling, this.creatureLightningElemental];
-	}
 
 	public override initializeSaveData(data?: ITroposphereData): ITroposphereData {
 		if (!data) {
@@ -677,7 +788,7 @@ export default class Troposphere extends Mod {
 	}
 
 	public setFlying(human: Human, flying: boolean, passTurn: boolean): boolean {
-		const z = !flying ? WorldZ.Overworld : this.z;
+		const z = !flying ? WorldZ.Surface : this.z;
 
 		const openTile = human.island.getTile(human.x, human.y, z).findMatchingTile(this.isFlyableTile.bind(this));
 		if (openTile === undefined || human.z === WorldZ.Cave) {
@@ -775,7 +886,7 @@ export default class Troposphere extends Mod {
 
 		for (let x = 0; x < island.mapSize; x++) {
 			for (let y = 0; y < island.mapSize; y++) {
-				const overworldTile = island.getTile(x, y, WorldZ.Overworld);
+				const overworldTile = island.getTile(x, y, WorldZ.Surface);
 				const terrainDescription = overworldTile.description;
 				const normalTerrainType = terrainDescription?.terrainType ?? TerrainType.Grass;
 
@@ -850,44 +961,13 @@ export default class Troposphere extends Mod {
 			return;
 		}
 
-		this.log.info("Creating troposphere entities");
-
-		const creatureChance = 0.0025;
-		const creatureSpriteChance = 0.0001;
-		const creatureAberrantChance = 0.05;
-		const creatureAberrantStormChance = 0.50;
-
-		const seededRandom = island.seededRandom.clone(undefined, island.seeds.base).advance();
+		this.log.info("Creating troposphere doodads");
 
 		for (const doodadToCreate of islandData.doodadsToCreate) {
 			island.doodads.create(doodadToCreate.doodadType, doodadToCreate.tile);
 		}
 
 		delete islandData.doodadsToCreate;
-
-		for (let x = 0; x < island.mapSize; x++) {
-			for (let y = 0; y < island.mapSize; y++) {
-				const tile = island.getTile(x, y, this.z);
-
-				const terrainType = tile.type;
-
-				switch (terrainType) {
-					case this.terrainCloud:
-					case this.terrainStorm:
-						const chance = seededRandom.float();
-						const aberrantChance = terrainType === this.terrainCloud ? creatureAberrantChance : creatureAberrantStormChance;
-						if (chance <= creatureSpriteChance) {
-							island.creatures.spawn(this.creatureSprite, tile, true, seededRandom.float() <= aberrantChance);
-
-						} else if (chance <= creatureChance) {
-							const creatureType = this.creaturePool[seededRandom.int(this.creaturePool.length)];
-							island.creatures.spawn(creatureType, tile, true, seededRandom.float() <= aberrantChance);
-						}
-
-						break;
-				}
-			}
-		}
 	}
 
 	@EventHandler(EventBus.WorldRenderer, "preRenderWorld")
@@ -915,7 +995,7 @@ export default class Troposphere extends Mod {
 			.floor()
 			.divide(scale);
 
-		const overworldLayer = worldRenderer.layers[WorldZ.Overworld];
+		const overworldLayer = worldRenderer.layers[WorldZ.Surface];
 
 		const { viewportBounds } = worldRenderer.getBounds(timestamp);
 		overworldLayer.ensureRendered(viewportBounds, true);
@@ -1015,15 +1095,6 @@ export default class Troposphere extends Mod {
 		}
 	}
 
-	@EventHandler(EventBus.CreatureManager, "shouldSpawnCreatureFromGroup")
-	public shouldSpawnCreatureFromGroup(manager: CreatureManager, creatureGroup: SpawnGroup, creaturePool: CreatureType[], tile: Tile): boolean | undefined {
-		if (tile.z !== this.z) {
-			return;
-		}
-
-		creaturePool.push.apply(creaturePool, this.creaturePool);
-	}
-
 	////////////////////////////////////
 	// Event Handlers
 	//
@@ -1045,7 +1116,7 @@ export default class Troposphere extends Mod {
 	@EventHandler(Creature, "canMove")
 	protected canCreatureMove(creature: Creature, tile?: Tile): boolean | undefined {
 		if (tile && tile.type === this.terrainHole) {
-			return creature.type !== this.creatureBear && creature.type !== this.creatureRabbit;
+			return creature.type !== this.creatureCloudBear && creature.type !== this.creatureCloudRabbit;
 		}
 	}
 
