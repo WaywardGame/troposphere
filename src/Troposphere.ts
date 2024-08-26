@@ -18,7 +18,7 @@ import Doodad from "@wayward/game/game/doodad/Doodad";
 import { DoodadType } from "@wayward/game/game/doodad/IDoodad";
 import { Action } from "@wayward/game/game/entity/action/Action";
 import { ActionArgument, ActionType, IActionUsable } from "@wayward/game/game/entity/action/IAction";
-import { AiType } from "@wayward/game/game/entity/AI";
+import { AiType } from "@wayward/game/game/entity/ai/AI";
 import Creature from "@wayward/game/game/entity/creature/Creature";
 import { CreatureType, TileGroup } from "@wayward/game/game/entity/creature/ICreature";
 import creatureZoneDescriptions from "@wayward/game/game/entity/creature/zone/CreatureZoneDescriptions";
