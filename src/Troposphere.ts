@@ -45,7 +45,7 @@ import Vector3 from "@wayward/game/utilities/math/Vector3";
 import Merge from "@wayward/game/utilities/object/Merge";
 import { IInjectionApi, Inject, InjectionPosition } from "@wayward/utilities/class/Inject";
 import { Tuple } from "@wayward/utilities/collection/Tuple";
-import { WorldZ } from "@wayward/utilities/game/WorldZ";
+import WorldZ from "@wayward/utilities/game/WorldZ";
 import { generalRandom } from "@wayward/utilities/random/RandomUtilities";
 
 interface ITroposphereData {
