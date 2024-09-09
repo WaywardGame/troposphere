@@ -11,7 +11,7 @@ import { AiType } from "@wayward/game/game/entity/ai/AI";
 import Creature from "@wayward/game/game/entity/creature/Creature";
 import { CreatureType, TileGroup } from "@wayward/game/game/entity/creature/ICreature";
 import creatureZoneDescriptions from "@wayward/game/game/entity/creature/zone/CreatureZoneDescriptions";
-import { IBiomeCreatureZones } from "@wayward/game/game/entity/creature/zone/ICreatureZone";
+import { IBiomeCreatureZones, IBiomeCreatureZoneSpawnGroup } from "@wayward/game/game/entity/creature/zone/ICreatureZone";
 import Human from "@wayward/game/game/entity/Human";
 import { DamageType, Defense, EntityType, MoveType } from "@wayward/game/game/entity/IEntity";
 import { Delay, HairColor, HairStyle, SkillType, SkinColor } from "@wayward/game/game/entity/IHuman";
@@ -32,6 +32,7 @@ import TileBits from "@wayward/game/game/tile/TileBits";
 import { PartOfDay } from "@wayward/game/game/time/ITimeManager";
 import Message from "@wayward/game/language/dictionary/Message";
 import Note from "@wayward/game/language/dictionary/Note";
+import { ModRegistrationTime } from "@wayward/game/mod/BaseMod";
 import Mod from "@wayward/game/mod/Mod";
 import Register, { IOverrideDescription, OverrideDecorator, Registry } from "@wayward/game/mod/ModRegistry";
 import { RenderSource, UpdateRenderFlag } from "@wayward/game/renderer/IRenderer";
@@ -46,7 +47,10 @@ import Merge from "@wayward/game/utilities/object/Merge";
 import { IInjectionApi, Inject, InjectionPosition } from "@wayward/utilities/class/Inject";
 import { Tuple } from "@wayward/utilities/collection/Tuple";
 import WorldZ from "@wayward/utilities/game/WorldZ";
+import Objects from "@wayward/utilities/object/Objects";
 import { generalRandom } from "@wayward/utilities/random/RandomUtilities";
+
+const NAME = "Troposphere";
 
 interface ITroposphereData {
 	islands: Map<IslandId, ITroposphereIslandData>;
@@ -74,100 +78,100 @@ interface ITroposphereGatherRanbowCanUse extends IActionUsable {
 
 const CREATURE_ZONES: IBiomeCreatureZones = {
 	tiers: {
-		tier0: {
-			[Registry<Troposphere>().get("z")]: [
+		tier0: new Map<WorldZ, IBiomeCreatureZoneSpawnGroup[]>([
+			[Registry<Troposphere>(NAME).get("z"), [
 				{
 					[PartOfDay.Always]: [
-						[Registry<Troposphere>().get("creatureCloudRabbit")],
+						[Registry<Troposphere>(NAME).get("creatureCloudRabbit")],
 					],
 				},
-			],
-		},
-		tier1: {
-			[Registry<Troposphere>().get("z")]: [
+			]],
+		]),
+		tier1: new Map<WorldZ, IBiomeCreatureZoneSpawnGroup[]>([
+			[Registry<Troposphere>("Troposphere").get("z"), [
 				{
 					[PartOfDay.AllDaytime]: [
-						[Registry<Troposphere>().get("creatureCloudRabbit")],
+						[Registry<Troposphere>(NAME).get("creatureCloudRabbit")],
 					],
 					[PartOfDay.AllNighttime]: [
-						[Registry<Troposphere>().get("creatureCloudling")],
+						[Registry<Troposphere>(NAME).get("creatureCloudling")],
 					],
 				},
-			],
-		},
-		tier2: {
-			[Registry<Troposphere>().get("z")]: [
+			]],
+		]),
+		tier2: new Map<WorldZ, IBiomeCreatureZoneSpawnGroup[]>([
+			[Registry<Troposphere>(NAME).get("z"), [
 				{
 					[PartOfDay.AllDaytime]: [
-						[Registry<Troposphere>().get("creatureCloudRabbit")],
-						[Registry<Troposphere>().get("creatureCloudling")],
+						[Registry<Troposphere>(NAME).get("creatureCloudRabbit")],
+						[Registry<Troposphere>(NAME).get("creatureCloudling")],
 					],
 					[PartOfDay.AllNighttime]: [
-						[Registry<Troposphere>().get("creatureCloudBear")],
+						[Registry<Troposphere>(NAME).get("creatureCloudBear")],
 					],
 				},
-			],
-		},
-		tier3: {
-			[Registry<Troposphere>().get("z")]: [
+			]],
+		]),
+		tier3: new Map<WorldZ, IBiomeCreatureZoneSpawnGroup[]>([
+			[Registry<Troposphere>(NAME).get("z"), [
 				{
 					[PartOfDay.Always]: [
-						[Registry<Troposphere>().get("creatureCloudRabbit"), Registry<Troposphere>().get("creatureCloudBear")],
-						[Registry<Troposphere>().get("creatureCloudling"), Registry<Troposphere>().get("creatureCloudBear")],
+						[Registry<Troposphere>(NAME).get("creatureCloudRabbit"), Registry<Troposphere>(NAME).get("creatureCloudBear")],
+						[Registry<Troposphere>(NAME).get("creatureCloudling"), Registry<Troposphere>(NAME).get("creatureCloudBear")],
 					],
 				},
-			],
-		},
-		tier4: {
-			[Registry<Troposphere>().get("z")]: [
+			]],
+		]),
+		tier4: new Map<WorldZ, IBiomeCreatureZoneSpawnGroup[]>([
+			[Registry<Troposphere>(NAME).get("z"), [
 				{
 					[PartOfDay.AllDaytime]: [
-						[Registry<Troposphere>().get("creatureCloudBear")],
-						[Registry<Troposphere>().get("creatureCloudling"), Registry<Troposphere>().get("creatureCloudling"), Registry<Troposphere>().get("creatureCloudRabbit")],
+						[Registry<Troposphere>(NAME).get("creatureCloudBear")],
+						[Registry<Troposphere>(NAME).get("creatureCloudling"), Registry<Troposphere>(NAME).get("creatureCloudling"), Registry<Troposphere>(NAME).get("creatureCloudRabbit")],
 					],
 					[PartOfDay.AllNighttime]: [
-						[Registry<Troposphere>().get("creatureLightningElemental")],
+						[Registry<Troposphere>(NAME).get("creatureLightningElemental")],
 					],
 				},
-			],
-		},
-		tier5: {
-			[Registry<Troposphere>().get("z")]: [
+			]],
+		]),
+		tier5: new Map<WorldZ, IBiomeCreatureZoneSpawnGroup[]>([
+			[Registry<Troposphere>(NAME).get("z"), [
 				{
 					[PartOfDay.Always]: [
-						[Registry<Troposphere>().get("creatureCloudBear"), Registry<Troposphere>().get("creatureLightningElemental")],
-						[Registry<Troposphere>().get("creatureLightningElemental"), Registry<Troposphere>().get("creatureCloudling"), Registry<Troposphere>().get("creatureCloudRabbit")],
-						[Registry<Troposphere>().get("creatureCloudBear")],
+						[Registry<Troposphere>(NAME).get("creatureCloudBear"), Registry<Troposphere>(NAME).get("creatureLightningElemental")],
+						[Registry<Troposphere>(NAME).get("creatureLightningElemental"), Registry<Troposphere>(NAME).get("creatureCloudling"), Registry<Troposphere>(NAME).get("creatureCloudRabbit")],
+						[Registry<Troposphere>(NAME).get("creatureCloudBear")],
 					],
 				},
-			],
-		},
-		tier6: {
-			[Registry<Troposphere>().get("z")]: [
+			]],
+		]),
+		tier6: new Map<WorldZ, IBiomeCreatureZoneSpawnGroup[]>([
+			[Registry<Troposphere>(NAME).get("z"), [
 				{
 					[PartOfDay.Always]: [
-						[Registry<Troposphere>().get("creatureCloudBear"), Registry<Troposphere>().get("creatureLightningElemental")],
-						[Registry<Troposphere>().get("creatureLightningElemental")],
+						[Registry<Troposphere>(NAME).get("creatureCloudBear"), Registry<Troposphere>(NAME).get("creatureLightningElemental")],
+						[Registry<Troposphere>(NAME).get("creatureLightningElemental")],
 					],
 					[PartOfDay.AllNighttime]: [
-						[Registry<Troposphere>().get("creatureSprite"), Registry<Troposphere>().get("creatureLightningElemental")],
+						[Registry<Troposphere>(NAME).get("creatureSprite"), Registry<Troposphere>(NAME).get("creatureLightningElemental")],
 					],
 				},
-			],
-		},
-		tier7: {
-			[Registry<Troposphere>().get("z")]: [
+			]],
+		]),
+		tier7: new Map<WorldZ, IBiomeCreatureZoneSpawnGroup[]>([
+			[Registry<Troposphere>(NAME).get("z"), [
 				{
 					[PartOfDay.Always]: [
-						[Registry<Troposphere>().get("creatureSprite")],
-						[Registry<Troposphere>().get("creatureLightningElemental"), Registry<Troposphere>().get("creatureSprite"), Registry<Troposphere>().get("creatureCloudBear")],
+						[Registry<Troposphere>(NAME).get("creatureSprite")],
+						[Registry<Troposphere>(NAME).get("creatureLightningElemental"), Registry<Troposphere>(NAME).get("creatureSprite"), Registry<Troposphere>(NAME).get("creatureCloudBear")],
 					],
 					[PartOfDay.AllNighttime]: [
-						[Registry<Troposphere>().get("creatureSprite")],
+						[Registry<Troposphere>(NAME).get("creatureSprite")],
 					],
 				},
-			],
-		},
+			]],
+		]),
 	},
 };
 
@@ -727,10 +731,10 @@ export default class Troposphere extends Mod {
 	//
 
 	@Register.bulk<"override", OverrideDecorator<typeof creatureZoneDescriptions, BiomeType>>("override", ...Enums.values(BiomeType)
-		.map(biome => Tuple((): IOverrideDescription<typeof creatureZoneDescriptions, BiomeType> => ({
+		.map(biome => Tuple(ModRegistrationTime.Load, (): IOverrideDescription<typeof creatureZoneDescriptions, BiomeType> => ({
 			object: creatureZoneDescriptions,
 			property: biome,
-			value: Merge(creatureZoneDescriptions[biome], CREATURE_ZONES),
+			value: Merge(Objects.deepClone(creatureZoneDescriptions[biome]), Objects.deepClone(CREATURE_ZONES)),
 		}))))
 	public creatureZoneOverrides: (typeof creatureZoneDescriptions)[];
 
