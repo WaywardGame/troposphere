@@ -2,7 +2,7 @@ import { SfxType } from "@wayward/game/audio/IAudio";
 import { EventBus } from "@wayward/game/event/EventBuses";
 import { EventHandler } from "@wayward/game/event/EventManager";
 import { BiomeType } from "@wayward/game/game/biome/IBiome";
-import { Deity } from "@wayward/game/game/deity/Deity";
+import Deity from "@wayward/game/game/deity/Deity";
 import Doodad from "@wayward/game/game/doodad/Doodad";
 import { DoodadType } from "@wayward/game/game/doodad/IDoodad";
 import { Action } from "@wayward/game/game/entity/action/Action";
