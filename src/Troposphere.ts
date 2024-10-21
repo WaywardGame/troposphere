@@ -330,7 +330,7 @@ export default class Troposphere extends Mod {
 		onUse: {
 			[ActionType.Build]: {
 				type: Registry<Troposphere>().get("doodadRainbow"),
-			}
+			},
 		},
 	})
 	public itemRainbow: ItemType;
@@ -351,7 +351,7 @@ export default class Troposphere extends Mod {
 		use: [ActionType.DrinkItem],
 		onBurn: [ItemType.None],
 		onUse: {
-			[ActionType.DrinkItem]: [0, 2, 0, 1],
+			[ActionType.DrinkItem]: [0, 2, 0, 1, SkillType.None],
 		},
 		tier: {
 			[ItemTypeGroup.Liquid]: 1,
