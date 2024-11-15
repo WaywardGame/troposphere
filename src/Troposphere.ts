@@ -3,15 +3,16 @@ import { EventBus } from "@wayward/game/event/EventBuses";
 import { EventHandler } from "@wayward/game/event/EventManager";
 import { BiomeType } from "@wayward/game/game/biome/IBiome";
 import Deity from "@wayward/game/game/deity/Deity";
-import Doodad from "@wayward/game/game/doodad/Doodad";
-import { DoodadType } from "@wayward/game/game/doodad/IDoodad";
+import type Doodad from "@wayward/game/game/doodad/Doodad";
+import type { DoodadType } from "@wayward/game/game/doodad/IDoodad";
 import { Action } from "@wayward/game/game/entity/action/Action";
-import { ActionArgument, ActionType, IActionUsable } from "@wayward/game/game/entity/action/IAction";
+import type { IActionUsable } from "@wayward/game/game/entity/action/IAction";
+import { ActionArgument, ActionType } from "@wayward/game/game/entity/action/IAction";
 import { AiType } from "@wayward/game/game/entity/ai/AI";
 import Creature from "@wayward/game/game/entity/creature/Creature";
-import { CreatureType, TileGroup } from "@wayward/game/game/entity/creature/ICreature";
+import type { CreatureType, TileGroup } from "@wayward/game/game/entity/creature/ICreature";
 import creatureZoneDescriptions from "@wayward/game/game/entity/creature/zone/CreatureZoneDescriptions";
-import { IBiomeCreatureZones, IBiomeCreatureZoneSpawnGroup } from "@wayward/game/game/entity/creature/zone/ICreatureZone";
+import type { IBiomeCreatureZones, IBiomeCreatureZoneSpawnGroup } from "@wayward/game/game/entity/creature/zone/ICreatureZone";
 import Human from "@wayward/game/game/entity/Human";
 import { DamageType, Defense, EntityType, MoveType } from "@wayward/game/game/entity/IEntity";
 import { Delay, HairColor, HairStyle, SkillType, SkinColor } from "@wayward/game/game/entity/IHuman";
@@ -20,31 +21,33 @@ import { PlayerState } from "@wayward/game/game/entity/player/IPlayer";
 import Player from "@wayward/game/game/entity/player/Player";
 import { BleedLevel } from "@wayward/game/game/entity/status/handler/IBleeding";
 import { StatusType } from "@wayward/game/game/entity/status/IStatus";
-import { IslandId } from "@wayward/game/game/island/IIsland";
-import Island from "@wayward/game/game/island/Island";
+import type { IslandId } from "@wayward/game/game/island/IIsland";
+import type Island from "@wayward/game/game/island/Island";
 import { ItemType, ItemTypeGroup, RecipeLevel, VehicleRenderType, VehicleType } from "@wayward/game/game/item/IItem";
 import { RecipeComponent, itemDescriptions } from "@wayward/game/game/item/ItemDescriptions";
 import { LootGroupType } from "@wayward/game/game/item/LootGroups";
 import { TerrainType } from "@wayward/game/game/tile/ITerrain";
 import { TileEventType } from "@wayward/game/game/tile/ITileEvent";
-import Tile from "@wayward/game/game/tile/Tile";
+import type Tile from "@wayward/game/game/tile/Tile";
 import TileBits from "@wayward/game/game/tile/TileBits";
 import { PartOfDay } from "@wayward/game/game/time/ITimeManager";
 import Message from "@wayward/game/language/dictionary/Message";
-import Note from "@wayward/game/language/dictionary/Note";
+import type Note from "@wayward/game/language/dictionary/Note";
 import { ModRegistrationTime } from "@wayward/game/mod/BaseMod";
 import Mod from "@wayward/game/mod/Mod";
-import Register, { IOverrideDescription, OverrideDecorator, Registry } from "@wayward/game/mod/ModRegistry";
+import type { IOverrideDescription, OverrideDecorator } from "@wayward/game/mod/ModRegistry";
+import Register, { Registry } from "@wayward/game/mod/ModRegistry";
 import { RenderSource, UpdateRenderFlag } from "@wayward/game/renderer/IRenderer";
 import { RenderFlag } from "@wayward/game/renderer/world/IWorldRenderer";
-import World from "@wayward/game/renderer/world/World";
+import type World from "@wayward/game/renderer/world/World";
 import { WorldRenderer } from "@wayward/game/renderer/world/WorldRenderer";
-import { HelpArticle } from "@wayward/game/ui/screen/screens/menu/menus/help/HelpArticleDescriptions";
+import type { HelpArticle } from "@wayward/game/ui/screen/screens/menu/menus/help/HelpArticleDescriptions";
 import Enums from "@wayward/game/utilities/enum/Enums";
 import Vector2 from "@wayward/game/utilities/math/Vector2";
 import Vector3 from "@wayward/game/utilities/math/Vector3";
 import Merge from "@wayward/game/utilities/object/Merge";
-import { IInjectionApi, Inject, InjectionPosition } from "@wayward/utilities/class/Inject";
+import type { IInjectionApi } from "@wayward/utilities/class/Inject";
+import { Inject, InjectionPosition } from "@wayward/utilities/class/Inject";
 import { Tuple } from "@wayward/utilities/collection/Tuple";
 import WorldZ from "@wayward/utilities/game/WorldZ";
 import Objects from "@wayward/utilities/object/Objects";
@@ -736,7 +739,7 @@ export default class Troposphere extends Mod {
 			property: biome,
 			value: Merge(Objects.deepClone(creatureZoneDescriptions[biome]), Objects.deepClone(CREATURE_ZONES)),
 		}))))
-	public creatureZoneOverrides: (typeof creatureZoneDescriptions)[];
+	public creatureZoneOverrides: Array<typeof creatureZoneDescriptions>;
 
 	////////////////////////////////////
 	// Fields
@@ -768,14 +771,14 @@ export default class Troposphere extends Mod {
 
 	public override onLoad(): void {
 		const glassBottle = itemDescriptions[ItemType.GlassBottle];
-		if (glassBottle && glassBottle.use) {
+		if (glassBottle?.use) {
 			glassBottle.use.push(this.actionGatherRainbow);
 		}
 	}
 
 	public override onUnload(): void {
 		const glassBottle = itemDescriptions[ItemType.GlassBottle];
-		if (glassBottle && glassBottle.use) {
+		if (glassBottle?.use) {
 			glassBottle.use.pop();
 		}
 	}
@@ -950,7 +953,7 @@ export default class Troposphere extends Mod {
 	@EventHandler(EventBus.Island, "postGenerateWorld")
 	public postGenerateWorld(island: Island) {
 		const islandData = this.data.islands.get(island.id);
-		if (!islandData || !islandData.doodadsToCreate) {
+		if (!islandData?.doodadsToCreate) {
 			return;
 		}
 
