@@ -80,7 +80,7 @@ interface ITroposphereGatherRanbowCanUse extends IActionUsable {
 //
 
 const CREATURE_ZONES: IBiomeCreatureZones = {
-	tiers: {
+	creatures: {
 		tier0: new Map<WorldZ, IBiomeCreatureZoneSpawnGroup[]>([
 			[Registry<Troposphere>(NAME).get("z"), [
 				{
