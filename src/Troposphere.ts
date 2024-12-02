@@ -951,7 +951,7 @@ export default class Troposphere extends Mod {
 	}
 
 	@EventHandler(EventBus.Island, "postGenerateWorld")
-	public postGenerateWorld(island: Island) {
+	public postGenerateWorld(island: Island): void {
 		const islandData = this.data.islands.get(island.id);
 		if (!islandData?.doodadsToCreate) {
 			return;
