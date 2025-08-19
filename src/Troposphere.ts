@@ -586,7 +586,7 @@ export default class Troposphere extends Mod {
 			.setResistance(DamageType.Blunt, 1),
 		damageType: DamageType.Slashing | DamageType.Blunt,
 		ai: AiType.Hostile,
-		moveType: MoveType.Land | MoveType.ShallowWater | MoveType.Water | MoveType.BreakDoodads,
+		moveType: MoveType.Land | MoveType.ShallowWater | MoveType.Water | MoveType.DamageFacingDoodads,
 		causesStatus: [[StatusType.Bleeding, BleedLevel.Major]],
 		runeChance: [Deity.Good, 0.3],
 		makeNoise: true,
