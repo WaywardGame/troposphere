@@ -15,7 +15,7 @@ import creatureZoneDescriptions from "@wayward/game/game/entity/creature/zone/Cr
 import type { IBiomeCreatureZones, IBiomeCreatureZoneSpawnGroup } from "@wayward/game/game/entity/creature/zone/ICreatureZone";
 import Human from "@wayward/game/game/entity/Human";
 import { DamageType, Defense, EntityType, MoveType } from "@wayward/game/game/entity/IEntity";
-import { Delay, HairColor, HairStyle, SkillType, SkinColor } from "@wayward/game/game/entity/IHuman";
+import { Delay, HairColor, HairStyle, SkinColor } from "@wayward/game/game/entity/IHuman";
 import { MessageType, Source } from "@wayward/game/game/entity/player/IMessageManager";
 import { PlayerState } from "@wayward/game/game/entity/player/IPlayer";
 import Player from "@wayward/game/game/entity/player/Player";
@@ -52,6 +52,7 @@ import { Tuple } from "@wayward/utilities/collection/Tuple";
 import WorldZ from "@wayward/utilities/game/WorldZ";
 import Objects from "@wayward/utilities/object/Objects";
 import { generalRandom } from "@wayward/utilities/random/RandomUtilities";
+import { SkillType } from "@wayward/game/game/entity/skill/ISkills";
 
 const NAME = "Troposphere";
 
