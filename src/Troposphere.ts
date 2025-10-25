@@ -15,7 +15,7 @@ import creatureZoneDescriptions from "@wayward/game/game/entity/creature/zone/Cr
 import type { IBiomeCreatureZones, IBiomeCreatureZoneSpawnGroup } from "@wayward/game/game/entity/creature/zone/ICreatureZone";
 import Human from "@wayward/game/game/entity/Human";
 import { DamageType, Defense, EntityType, MoveType } from "@wayward/game/game/entity/IEntity";
-import { Delay, HairColor, HairStyle, SkillType, SkinColor } from "@wayward/game/game/entity/IHuman";
+import { Delay, HairColor, HairStyle, SkinColor } from "@wayward/game/game/entity/IHuman";
 import { MessageType, Source } from "@wayward/game/game/entity/player/IMessageManager";
 import { PlayerState } from "@wayward/game/game/entity/player/IPlayer";
 import Player from "@wayward/game/game/entity/player/Player";
@@ -46,12 +46,13 @@ import Enums from "@wayward/game/utilities/enum/Enums";
 import Vector2 from "@wayward/game/utilities/math/Vector2";
 import Vector3 from "@wayward/game/utilities/math/Vector3";
 import Merge from "@wayward/game/utilities/object/Merge";
-import type { IInjectionApi } from "@wayward/utilities/class/Inject";
-import { Inject, InjectionPosition } from "@wayward/utilities/class/Inject";
+import type { IInjectionApi } from "@wayward/game/utilities/Inject";
+import { Inject, InjectionPosition } from "@wayward/game/utilities/Inject";
 import { Tuple } from "@wayward/utilities/collection/Tuple";
 import WorldZ from "@wayward/utilities/game/WorldZ";
 import Objects from "@wayward/utilities/object/Objects";
 import { generalRandom } from "@wayward/utilities/random/RandomUtilities";
+import { SkillType } from "@wayward/game/game/entity/skill/ISkills";
 
 const NAME = "Troposphere";
 
@@ -484,7 +485,7 @@ export default class Troposphere extends Mod {
 		sound: SfxType.TreeHit,
 		leftOvers: [{ terrainType: Registry<Troposphere>().get("terrainCloudWater") }],
 		resources: [
-			{ type: Registry<Troposphere>().get("itemCloudstone") },
+			{ itemType: Registry<Troposphere>().get("itemCloudstone") },
 		],
 		useDoodadLikeAdaptor: true,
 		background: Registry<Troposphere>().get("terrainCloud"),
@@ -501,14 +502,14 @@ export default class Troposphere extends Mod {
 		leftOvers: [{ terrainType: Registry<Troposphere>().get("terrainCloud") }],
 		isMountain: true,
 		resources: [
-			{ type: Registry<Troposphere>().get("itemCloudstone") },
-			{ type: Registry<Troposphere>().get("itemCloudstone") },
-			{ type: Registry<Troposphere>().get("itemCloudstone") },
-			{ type: Registry<Troposphere>().get("itemCloudstone") },
-			{ type: Registry<Troposphere>().get("itemCloudstone") },
-			{ type: Registry<Troposphere>().get("itemCloudstone") },
-			{ type: Registry<Troposphere>().get("itemCloudstone"), chance: 45 },
-			{ type: Registry<Troposphere>().get("itemCloudstone") },
+			{ itemType: Registry<Troposphere>().get("itemCloudstone") },
+			{ itemType: Registry<Troposphere>().get("itemCloudstone") },
+			{ itemType: Registry<Troposphere>().get("itemCloudstone") },
+			{ itemType: Registry<Troposphere>().get("itemCloudstone") },
+			{ itemType: Registry<Troposphere>().get("itemCloudstone") },
+			{ itemType: Registry<Troposphere>().get("itemCloudstone") },
+			{ itemType: Registry<Troposphere>().get("itemCloudstone"), chance: 45 },
+			{ itemType: Registry<Troposphere>().get("itemCloudstone") },
 		],
 		terrainType: Registry<Troposphere>().get("terrainCloudstone"),
 	})
@@ -529,10 +530,10 @@ export default class Troposphere extends Mod {
 		sound: SfxType.TreeHit,
 		leftOvers: [{ terrainType: Registry<Troposphere>().get("terrainCloudWater") }],
 		resources: [
-			{ type: Registry<Troposphere>().get("itemSnowflakes"), chance: 5 },
-			{ type: Registry<Troposphere>().get("itemCloudstone") },
-			{ type: Registry<Troposphere>().get("itemCloudstone"), chance: 45 },
-			{ type: Registry<Troposphere>().get("itemCloudstone") },
+			{ itemType: Registry<Troposphere>().get("itemSnowflakes"), chance: 5 },
+			{ itemType: Registry<Troposphere>().get("itemCloudstone") },
+			{ itemType: Registry<Troposphere>().get("itemCloudstone"), chance: 45 },
+			{ itemType: Registry<Troposphere>().get("itemCloudstone") },
 		],
 		useDoodadLikeAdaptor: true,
 		background: Registry<Troposphere>().get("terrainStorm"),
@@ -549,16 +550,16 @@ export default class Troposphere extends Mod {
 		leftOvers: [{ terrainType: Registry<Troposphere>().get("terrainStorm") }],
 		isMountain: true,
 		resources: [
-			{ type: Registry<Troposphere>().get("itemSnowflakes"), chance: 5 },
-			{ type: Registry<Troposphere>().get("itemCloudstone") },
-			{ type: Registry<Troposphere>().get("itemSnowflakes"), chance: 5 },
-			{ type: Registry<Troposphere>().get("itemCloudstone") },
-			{ type: Registry<Troposphere>().get("itemSnowflakes"), chance: 5 },
-			{ type: Registry<Troposphere>().get("itemCloudstone") },
-			{ type: Registry<Troposphere>().get("itemSnowflakes"), chance: 5 },
-			{ type: Registry<Troposphere>().get("itemCloudstone") },
-			{ type: Registry<Troposphere>().get("itemCloudstone"), chance: 45 },
-			{ type: Registry<Troposphere>().get("itemCloudstone") },
+			{ itemType: Registry<Troposphere>().get("itemSnowflakes"), chance: 5 },
+			{ itemType: Registry<Troposphere>().get("itemCloudstone") },
+			{ itemType: Registry<Troposphere>().get("itemSnowflakes"), chance: 5 },
+			{ itemType: Registry<Troposphere>().get("itemCloudstone") },
+			{ itemType: Registry<Troposphere>().get("itemSnowflakes"), chance: 5 },
+			{ itemType: Registry<Troposphere>().get("itemCloudstone") },
+			{ itemType: Registry<Troposphere>().get("itemSnowflakes"), chance: 5 },
+			{ itemType: Registry<Troposphere>().get("itemCloudstone") },
+			{ itemType: Registry<Troposphere>().get("itemCloudstone"), chance: 45 },
+			{ itemType: Registry<Troposphere>().get("itemCloudstone") },
 		],
 		terrainType: Registry<Troposphere>().get("terrainStormstone"),
 	})
@@ -586,7 +587,7 @@ export default class Troposphere extends Mod {
 			.setResistance(DamageType.Blunt, 1),
 		damageType: DamageType.Slashing | DamageType.Blunt,
 		ai: AiType.Hostile,
-		moveType: MoveType.Land | MoveType.ShallowWater | MoveType.Water | MoveType.BreakDoodads,
+		moveType: MoveType.Land | MoveType.ShallowWater | MoveType.Water | MoveType.DamageFacingDoodads,
 		causesStatus: [[StatusType.Bleeding, BleedLevel.Major]],
 		runeChance: [Deity.Good, 0.3],
 		makeNoise: true,
@@ -1080,7 +1081,7 @@ export default class Troposphere extends Mod {
 						.type(MessageType.Bad)
 						.send(this.messageFellToLand, actualDamage);
 
-					if (actualDamage > 25 || actualDamage > 15 && player.island.seededRandom.chance(.5)) {
+					if ((actualDamage > 25 || actualDamage > 15) && player.island.seededRandom.chance(.5)) {
 						player.island.tileEvents.createBlood(player);
 					}
 				}
