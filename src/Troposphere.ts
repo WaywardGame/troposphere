@@ -48,6 +48,7 @@ import WorldZ from "@wayward/utilities/game/WorldZ";
 import Objects from "@wayward/utilities/object/Objects";
 import { generalRandom } from "@wayward/utilities/random/RandomUtilities";
 import { SkillType } from "@wayward/game/game/entity/skill/ISkills";
+import type { IBound3 } from "@wayward/game/utilities/math/Bound3";
 
 interface ITroposphereData {
 	islands: Map<IslandId, ITroposphereIslandData>;
@@ -707,6 +708,8 @@ export default class Troposphere extends Mod {
 	@Mod.saveData<Troposphere>("Troposphere")
 	public data: ITroposphereData;
 
+	private flushedOverworld = false;
+
 	public override initializeSaveData(data?: ITroposphereData): ITroposphereData {
 		if (!data) {
 			data = {
@@ -803,6 +806,8 @@ export default class Troposphere extends Mod {
 
 	@EventHandler(EventBus.Island, "preLoadWorld")
 	public onPreLoadWorld(island: Island, world: World): void {
+		this.flushedOverworld = false;
+
 		const islandData = this.data.islands.get(island.id);
 		if (!islandData) {
 			this.data.islands.set(island.id, {
@@ -952,8 +957,22 @@ export default class Troposphere extends Mod {
 
 		const overworldLayer = worldRenderer.layers[WorldZ.Surface];
 
+		if (!this.flushedOverworld) {
+			this.flushedOverworld = true;
+			overworldLayer.updateAll();
+		}
+
 		const { viewportBounds } = worldRenderer.getBounds(timestamp);
-		overworldLayer.ensureRendered(viewportBounds, true);
+
+		const viewportBoundsAdjusted: IBound3 = {
+			min: viewportBounds.min.copy().divide(4).round(),
+			max: viewportBounds.max.copy().multiply(4).round(),
+			z: viewportBounds.z,
+		};
+
+		while (overworldLayer.ensureRendered(viewportBoundsAdjusted, true)) {
+			// keep ensuring the overworld is flushed
+		}
 
 		worldRenderer.renderWorldLayer(overworldLayer, position.x, position.y, tileScale, viewWidth, viewHeight, RenderFlag.Terrain, false);
 	}
